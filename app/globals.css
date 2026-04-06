@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font CSS variables injected by next/font in layout.tsx */
+:root {
+  --font-barlow: var(--font-barlow-sans), system-ui, sans-serif;
+  --font-barlow-condensed: var(--font-barlow-cond), system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: #080b10;
+  color: #f1f5f9;
+  font-family: var(--font-barlow);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #232b38; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* Focus-visible — keyboard nav only, no outlines on click */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; border-radius: 6px; }
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
