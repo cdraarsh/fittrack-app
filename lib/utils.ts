@@ -1,5 +1,5 @@
 import { DAYS, WORKOUTS, DEFAULT_GYM_DAYS } from './constants';
-import type { Settings, DayData, WeightEntry, NutritionTargets, PREntry, MeasurementEntry } from './types';
+import type { Settings, DayData, WeightEntry, NutritionTargets, PREntry, MeasurementEntry, WorkoutTemplate } from './types';
 
 // ─── Date helpers ─────────────────────────────────────────────
 export function dk(d: Date): string {
@@ -93,9 +93,42 @@ export function getTargets(settings: Settings | null, isGymDay: boolean): Nutrit
   return { calories: cals, protein: prot, carbs, fat };
 }
 
+// ─── AI workout plan → WorkoutTemplate map ────────────────────
+export function getWorkoutMap(settings: Settings | null): Record<string, WorkoutTemplate> {
+  const aiPlan = settings?.aiPlan;
+  if (!aiPlan?.workout_plan?.days?.length) return WORKOUTS;
+
+  const gymDays = [...getGymDays(settings)].sort(
+    (a, b) => DAYS.indexOf(a as typeof DAYS[number]) - DAYS.indexOf(b as typeof DAYS[number])
+  );
+
+  const map: Record<string, WorkoutTemplate> = {};
+  aiPlan.workout_plan.days.forEach((aiDay, i) => {
+    const dayName = gymDays[i];
+    if (!dayName) return;
+    map[dayName] = {
+      day: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+      name: aiDay.day_label,
+      exercises: aiDay.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        sets: e.sets,
+        lo: e.reps_low,
+        hi: e.reps_high,
+        rest: e.rest,
+        cue: e.coaching_cue,
+        load: e.starting_load_kg,
+        isTime: e.is_timed,
+      })),
+      cardio: aiDay.cardio,
+    };
+  });
+  return map;
+}
+
 // ─── Workout helpers ──────────────────────────────────────────
-export function isWoDone(dayName: string, data: DayData): boolean {
-  const wo = WORKOUTS[dayName];
+export function isWoDone(dayName: string, data: DayData, workoutMap?: Record<string, WorkoutTemplate>): boolean {
+  const wo = (workoutMap ?? WORKOUTS)[dayName];
   if (!wo) return false;
   return wo.exercises.every(ex => {
     const sets = data.wo?.[ex.id]?.sets ?? [];
@@ -109,9 +142,9 @@ export function todayIsGymDay(settings: Settings | null): boolean {
 }
 
 // ─── PRs ─────────────────────────────────────────────────────
-export function computePRs(dayCache: Record<string, DayData>): Record<string, PREntry> {
+export function computePRs(dayCache: Record<string, DayData>, workoutMap?: Record<string, WorkoutTemplate>): Record<string, PREntry> {
   const exNames: Record<string, string> = {};
-  for (const wo of Object.values(WORKOUTS))
+  for (const wo of Object.values(workoutMap ?? WORKOUTS))
     for (const ex of wo.exercises)
       exNames[ex.id] = ex.name;
 
@@ -132,6 +165,7 @@ export function computePRs(dayCache: Record<string, DayData>): Record<string, PR
 // ─── Consistency ──────────────────────────────────────────────
 export function calcConsistency(settings: Settings | null, dayCache: Record<string, DayData>) {
   const gymDays = getGymDays(settings);
+  const workoutMap = getWorkoutMap(settings);
   const today = new Date();
   const cutoff = new Date(today);
   cutoff.setDate(cutoff.getDate() - 27);
@@ -143,7 +177,7 @@ export function calcConsistency(settings: Settings | null, dayCache: Record<stri
     if (gymDays.includes(n)) {
       scheduled++;
       const data = dayCache[dk(d)] ?? { wo:{}, check:{}, meals:[], notes:'' };
-      if (isWoDone(n, data)) completed++;
+      if (isWoDone(n, data, workoutMap)) completed++;
     }
     d.setDate(d.getDate() + 1);
   }
@@ -153,6 +187,7 @@ export function calcConsistency(settings: Settings | null, dayCache: Record<stri
 // ─── Streaks (v1.3) ───────────────────────────────────────────
 export function computeStreaks(settings: Settings | null, dayCache: Record<string, DayData>) {
   const gymDays = getGymDays(settings);
+  const workoutMap = getWorkoutMap(settings);
   const today = new Date();
 
   // Day streak — consecutive days with activity (workout done OR meals logged OR checklist item)
@@ -163,7 +198,7 @@ export function computeStreaks(settings: Settings | null, dayCache: Record<strin
     const data = dayCache[dateStr];
     if (!data) break;
     const hasActivity =
-      isWoDone(DAYS[d.getDay()], data) ||
+      isWoDone(DAYS[d.getDay()], data, workoutMap) ||
       (data.meals?.length ?? 0) > 0 ||
       Object.values(data.check ?? {}).some(Boolean);
     if (!hasActivity) break;
@@ -190,7 +225,7 @@ export function computeStreaks(settings: Settings | null, dayCache: Record<strin
       const n = DAYS[wd.getDay()];
       if (gymDays.includes(n)) {
         const data = dayCache[dk(wd)] ?? { wo:{}, check:{}, meals:[], notes:'' };
-        if (isWoDone(n, data)) sessionsThisWeek++;
+        if (isWoDone(n, data, workoutMap)) sessionsThisWeek++;
       }
       wd.setDate(wd.getDate() + 1);
     }
@@ -236,8 +271,9 @@ export function computeWeeklySummary(settings: Settings | null, dayCache: Record
   const d = new Date(today);
   d.setDate(d.getDate() - 6);
 
+  const workoutMap = getWorkoutMap(settings);
   const exNames: Record<string, string> = {};
-  for (const wo of Object.values(WORKOUTS))
+  for (const wo of Object.values(workoutMap))
     for (const ex of wo.exercises)
       exNames[ex.id] = ex.name;
 
@@ -246,7 +282,7 @@ export function computeWeeklySummary(settings: Settings | null, dayCache: Record
     const data = dayCache[dk(d)] ?? { wo:{}, check:{}, meals:[], notes:'' };
     if (gymDays.includes(n)) {
       sessionsScheduled++;
-      if (isWoDone(n, data)) sessionsDone++;
+      if (isWoDone(n, data, workoutMap)) sessionsDone++;
     }
     const meals = data.meals ?? [];
     if (meals.length > 0) { totalCals += meals.reduce((s, m) => s + m.calories, 0); calDays++; }

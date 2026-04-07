@@ -28,6 +28,25 @@ const AIPlanSchema = z.object({
   deficit_strategy: z.string(),
   habit_priorities: z.array(z.string()),
   program_notes: z.string(),
+  workout_plan: z.object({
+    days: z.array(z.object({
+      day_label: z.string(),
+      focus: z.string(),
+      exercises: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        sets: z.number(),
+        reps_low: z.number(),
+        reps_high: z.number(),
+        rest: z.string(),
+        starting_load_kg: z.number().nullable(),
+        coaching_cue: z.string(),
+        is_timed: z.boolean(),
+      })),
+      cardio: z.string(),
+    })),
+    progression_note: z.string(),
+  }),
   phase_targets: z.object({
     weeks_1_to_quarter: z.string(),
     weeks_quarter_to_half: z.string(),

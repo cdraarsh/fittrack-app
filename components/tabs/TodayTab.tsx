@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Droplets, Moon, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
-import { DAYS, WORKOUTS } from '@/lib/constants';
-import { getTargets, getWeekNum, getDayDateInWeek, dk, isWoDone, getPhaseInfo, getProgramWeeks } from '@/lib/utils';
+import { DAYS } from '@/lib/constants';
+import { getTargets, getWeekNum, getDayDateInWeek, dk, isWoDone, getPhaseInfo, getProgramWeeks, getWorkoutMap } from '@/lib/utils';
 import { computeWeeklySummary } from '@/lib/utils';
 import StreakCard from '../streaks/StreakCard';
 import FridayCheckIn from '../checkin/FridayCheckIn';
@@ -26,7 +26,8 @@ export default function TodayTab() {
 
   const meals   = data.meals ?? [];
   const totCal  = meals.reduce((s, m) => s + m.calories, 0);
-  const wo      = WORKOUTS[todayName];
+  const workoutMap = getWorkoutMap(settings);
+  const wo         = workoutMap[todayName];
   const water   = data.check?.water ?? 0;
 
   async function setWater(n: number) {

@@ -1,7 +1,8 @@
 'use client';
 
 import { useApp } from '@/lib/store';
-import { SWAP_MAP, WORKOUTS } from '@/lib/constants';
+import { SWAP_MAP } from '@/lib/constants';
+import { getWorkoutMap } from '@/lib/utils';
 import { toast } from '../shared/Toast';
 
 interface Props {
@@ -14,7 +15,7 @@ export default function SwapSheet({ exId, onClose }: Props) {
 
   const currentSwap = settings?.swaps?.[exId];
   const original = (() => {
-    for (const wo of Object.values(WORKOUTS))
+    for (const wo of Object.values(getWorkoutMap(settings)))
       for (const ex of wo.exercises)
         if (ex.id === exId) return ex.name;
     return exId;

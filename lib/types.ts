@@ -91,6 +91,31 @@ export interface StreakData {
 
 export type PlanTier = 'free' | 'pro';
 
+// ─── AI-generated workout plan ────────────────────────────────
+export interface AIWorkoutExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps_low: number;
+  reps_high: number;
+  rest: string;               // e.g. "90s"
+  starting_load_kg: number | null;
+  coaching_cue: string;
+  is_timed: boolean;
+}
+
+export interface AIWorkoutDay {
+  day_label: string;          // e.g. "Upper A — Push Focus"
+  focus: string;              // e.g. "Chest, Shoulders, Triceps"
+  exercises: AIWorkoutExercise[];
+  cardio: string;
+}
+
+export interface AIWorkoutPlan {
+  days: AIWorkoutDay[];       // one entry per gym day, in order
+  progression_note: string;
+}
+
 // ─── AI-generated onboarding plan ─────────────────────────────
 export interface AIPlan {
   daily_targets: {
@@ -115,6 +140,7 @@ export interface AIPlan {
   deficit_strategy: string;
   habit_priorities: string[];
   program_notes: string;
+  workout_plan: AIWorkoutPlan;
   phase_targets: {
     weeks_1_to_quarter: string;
     weeks_quarter_to_half: string;

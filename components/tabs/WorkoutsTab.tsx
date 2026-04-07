@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
-import { DAYS, WORKOUTS } from '@/lib/constants';
-import { getDayDateInWeek, dk, isWoDone } from '@/lib/utils';
+import { DAYS } from '@/lib/constants';
+import { getDayDateInWeek, dk, isWoDone, getWorkoutMap } from '@/lib/utils';
 import ExerciseBlock from '../workout/ExerciseBlock';
 import { toast } from '../shared/Toast';
 import type { CustomExercise } from '@/lib/types';
@@ -48,11 +48,11 @@ export default function WorkoutsTab() {
   return (
     <div>
       <p className="text-xs text-text3 mb-4">Enter weight + reps, then tap ✓ to mark sets done.</p>
-      {Object.entries(WORKOUTS).map(([dayName, wo]) => {
+      {Object.entries(getWorkoutMap(settings)).map(([dayName, wo]) => {
         const dayDate = getDayDateInWeek(dayName, settings);
         const isToday = dk(dayDate) === dk(today);
         const dayData = getDayData(dayDate);
-        const done    = isWoDone(dayName, dayData);
+        const done    = isWoDone(dayName, dayData, getWorkoutMap(settings));
         const isOpen  = openDays[dayName] ?? isToday;
         const customExs: CustomExercise[] = settings?.customExercises?.[dayName] ?? [];
 

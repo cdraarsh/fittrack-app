@@ -20,7 +20,26 @@ Rules:
 - Fat: minimum 0.8 g/kg bodyweight, rounded to nearest 5g. Cap at 35% of calories.
 - Carbs: remainder after protein + fat calories. Round to nearest 5g.
 - Gym day vs rest day: reduce rest day carbs by 30–40%, not protein or fat.
-- Be specific and actionable. Vague outputs are useless.`;
+- Be specific and actionable. Vague outputs are useless.
+
+For the workout plan, generate exactly gym_days_per_week workout days. Rules:
+- Split selection by frequency:
+  - 2 days: Full Body A, Full Body B
+  - 3 days: Push (chest/shoulders/triceps), Pull (back/biceps), Legs
+  - 4 days: Upper A (push focus), Lower A (quad focus), Upper B (pull focus), Lower B (hinge focus)
+  - 5+ days: PPL + Upper + Lower
+- Volume by experience:
+  - Beginner: 3 sets, 4–5 exercises/day, compound-focused, higher reps (10–15)
+  - Intermediate: 3–4 sets, 5–6 exercises, mix of compounds and isolation
+  - Advanced: 4–5 sets, 6–7 exercises, periodised rep ranges
+- Goal adjustments:
+  - Weight loss: rep range 12–15, rest 45–75s, mandatory cardio 20–30 min
+  - Muscle gain: rep range 6–12, rest 90–120s, light cardio 10–15 min
+  - Recomp: rep range 10–12, rest 60–90s, moderate cardio 15–20 min
+- Starting loads: conservative estimates based on the person's bodyweight and experience. Beginners start light.
+- Exercise IDs: short snake_case strings (e.g. "bench", "squat", "rdl") — must be unique across all days.
+- Coaching cues: one specific, actionable sentence per exercise.
+- Cardio field: one specific prescription string (e.g. "Incline treadmill walk 12% grade 5.5 kph — 20 min").`;
 
 export function buildPlanUserPrompt(profile: OnboardingProfile): string {
   const goalLabel = {
