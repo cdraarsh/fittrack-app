@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText, Output } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { PLAN_SYSTEM_PROMPT, buildPlanUserPrompt } from '@/lib/aiPlan';
 import type { OnboardingProfile } from '@/lib/types';
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { output: plan } = await generateText({
-      model: 'anthropic/claude-sonnet-4.6',
+      model: anthropic('claude-sonnet-4-6'),
       output: Output.object({ schema: AIPlanSchema }),
       system: PLAN_SYSTEM_PROMPT,
       prompt: buildPlanUserPrompt(profile),
