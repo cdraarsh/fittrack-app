@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.67",
+    "@ai-sdk/xai": "^3.0.79",
     "@anthropic-ai/sdk": "^0.82.0",
     "@clerk/nextjs": "^6.0.0",
     "@supabase/supabase-js": "^2.49.0",
