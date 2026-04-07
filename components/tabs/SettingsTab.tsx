@@ -2,13 +2,19 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import { useClerk } from '@clerk/nextjs';
 import { DAYS, DEFAULT_GYM_DAYS } from '@/lib/constants';
 import { computeTargetsFromTDEE, dk } from '@/lib/utils';
 import { toast } from '../shared/Toast';
 
 export default function SettingsTab() {
-  const { settings, saveSettings, dayCache, getWeightLog } = useApp();
+  const { settings, saveSettings, dayCache, getWeightLog, deleteAllData } = useApp();
+  const { signOut } = useClerk();
   const s = settings;
+
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [name,      setName]      = useState(s?.name ?? '');
   const [weight,    setWeight]    = useState(s?.weight_start ?? 80);
@@ -37,6 +43,18 @@ export default function SettingsTab() {
     if (gymDays.length === 0) { toast('Select at least 1 gym day'); return; }
     await saveSettings({ name, weight_start: weight, height, startDate, gymDays, cals_gym: calsGym, cals_rest: calsRest, protein, fat, onboarded: true, programWeeks });
     toast('Settings saved ✓');
+  }
+
+  async function handleDeleteAll() {
+    if (deleteConfirm !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await deleteAllData();
+      await signOut();
+    } catch {
+      toast('Delete failed — try again');
+      setDeleting(false);
+    }
   }
 
   function exportData() {
@@ -147,7 +165,58 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      <div className="text-center text-[11px] text-text3 pb-4">FitTrack v1.3</div>
+      {/* Danger Zone */}
+      <div className="bg-bg1 border border-red-500/20 rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-red-400 mb-3">Danger Zone</div>
+
+        {!showDeleteZone ? (
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <div className="text-sm text-text2">Delete all my data</div>
+              <div className="text-xs text-text3">Permanently removes all workouts, nutrition, weight logs, and photos</div>
+            </div>
+            <button
+              onClick={() => setShowDeleteZone(true)}
+              className="text-xs font-bold px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 ml-3 shrink-0"
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="text-xs text-text3 mb-3 leading-relaxed">
+              This will permanently delete all your workouts, meals, weight entries, progress photos, and settings. This cannot be undone.
+            </div>
+            <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">
+              Type <span className="text-red-400">DELETE</span> to confirm
+            </div>
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
+              placeholder="DELETE"
+              className="w-full bg-bg3 border border-red-500/30 rounded-lg text-sm px-3 py-2.5 outline-none focus:border-red-500 text-text1 mb-3"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowDeleteZone(false); setDeleteConfirm(''); }}
+                className="flex-1 py-2.5 bg-bg3 border border-border rounded-lg text-sm font-bold text-text2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleteConfirm !== 'DELETE' || deleting}
+                className="flex-1 py-2.5 bg-red-500/10 border border-red-500/40 rounded-lg text-sm font-bold text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+              >
+                {deleting ? 'Deleting...' : 'Delete Everything'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="text-center text-[11px] text-text3 pb-4">FitTrack v1.6</div>
     </div>
   );
 }

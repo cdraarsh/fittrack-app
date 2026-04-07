@@ -28,6 +28,7 @@ interface AppContextValue {
   deletePhoto:     (id: string, storagePath: string) => Promise<void>;
   getCoachNote:    (weekNum: number) => string;
   saveCoachNote:   (weekNum: number, text: string) => Promise<void>;
+  deleteAllData:   () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -155,10 +156,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await saveSettings({ coachNotes });
   }, [settings, saveSettings]);
 
+  const deleteAllData = useCallback(async () => {
+    if (!db || !userId) return;
+    // Delete all storage files first
+    const paths = photoCache.map(p => p.storagePath);
+    if (paths.length > 0) await db.storage.from('progress-photos').remove(paths);
+    // Delete all DB rows
+    await Promise.all([
+      db.from('ft_settings').delete().eq('user_id', userId),
+      db.from('ft_days').delete().eq('user_id', userId),
+      db.from('ft_weights').delete().eq('user_id', userId),
+      db.from('ft_photos').delete().eq('user_id', userId),
+    ]);
+    // Clear local state — triggers onboarding wizard
+    setSettingsState(null);
+    setDayCache({});
+    setWeightCache([]);
+    setPhotoCache([]);
+  }, [db, userId, photoCache]);
+
   const value: AppContextValue = {
     settings, dayCache, weightCache, photoCache, isLoading, currentTab,
     setCurrentTab, saveSettings, getDayData, saveDayData, getWeightLog, saveWeightLog,
-    savePhoto, deletePhoto, getCoachNote, saveCoachNote,
+    savePhoto, deletePhoto, getCoachNote, saveCoachNote, deleteAllData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
