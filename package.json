@@ -9,8 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.67",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@clerk/nextjs": "^6.0.0",
     "@supabase/supabase-js": "^2.49.0",
+    "ai": "^6.0.149",
     "chart.js": "^4.4.0",
     "clsx": "^2.1.0",
     "lucide-react": "^1.7.0",

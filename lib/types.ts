@@ -91,6 +91,59 @@ export interface StreakData {
 
 export type PlanTier = 'free' | 'pro';
 
+// ─── AI-generated onboarding plan ─────────────────────────────
+export interface AIPlan {
+  daily_targets: {
+    gym_day_calories: number;
+    rest_day_calories: number;
+    protein_g: number;
+    carbs_g_gym: number;
+    carbs_g_rest: number;
+    fat_g: number;
+  };
+  tdee_estimate: number;
+  weekly_weight_change_target_kg: number;
+  expected_weight_in_program_end_kg: number;
+  cardio_recommendation: {
+    gym_days: string;
+    rest_days: string;
+    weekly_steps_target: number;
+  };
+  nutrition_principles: string[];
+  foods_to_prioritize: string[];
+  foods_to_limit: string[];
+  deficit_strategy: string;
+  habit_priorities: string[];
+  program_notes: string;
+  phase_targets: {
+    weeks_1_to_quarter: string;
+    weeks_quarter_to_half: string;
+    weeks_half_to_three_quarter: string;
+    weeks_three_quarter_to_end: string;
+  };
+}
+
+// ─── User profile from onboarding ─────────────────────────────
+export interface UserProfile {
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  target_weight_kg: number;
+  goal: 'weight_loss' | 'muscle_gain' | 'recomp';
+  activity_outside_gym: 'sedentary' | 'light' | 'moderate' | 'active';
+  experience: 'beginner' | 'intermediate' | 'advanced';
+  diet_style: 'no_restriction' | 'vegetarian' | 'vegan' | 'keto' | 'high_protein';
+  foods_to_avoid: string;
+}
+
+// Full profile sent to Claude — includes physical stats from Settings
+export interface OnboardingProfile extends UserProfile {
+  name: string;
+  weight_kg: number;
+  height_cm: number;
+  gym_days_per_week: number;
+  program_weeks: number;
+}
+
 export interface Settings {
   name: string;
   startDate: string;          // YYYY-MM-DD
@@ -109,6 +162,8 @@ export interface Settings {
   mealTemplates?: MealTemplate[];
   coachNotes?: Record<string, string>;   // weekNum → text
   programWeeks?: number;                 // 8 | 10 | 12 | 16 | 20, default 16
+  aiPlan?: AIPlan;                       // AI-generated personalised plan
+  userProfile?: UserProfile;             // raw profile collected at onboarding
 }
 
 export interface CustomExercise {
