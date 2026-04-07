@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText, Output } from 'ai';
-import { xai } from '@ai-sdk/xai';
+import { createXai } from '@ai-sdk/xai';
 import { z } from 'zod';
 import { PLAN_SYSTEM_PROMPT, buildPlanUserPrompt } from '@/lib/aiPlan';
 import type { OnboardingProfile } from '@/lib/types';
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Incomplete profile' }, { status: 400 });
     }
 
+    const xai = createXai({ apiKey: process.env.XAI_API_KEY });
     const { output: plan } = await generateText({
       model: xai('grok-3'),
       output: Output.object({ schema: AIPlanSchema }),
