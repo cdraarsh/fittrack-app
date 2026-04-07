@@ -1,5 +1,22 @@
 # FitTrack Changelog
 
+## v1.6.2 — 2026-04-07
+
+### Delete Account Data
+- New Danger Zone section in Settings tab
+- Two-step confirmation — user must type `DELETE` to activate the button
+- Permanently deletes all Supabase rows (`ft_settings`, `ft_days`, `ft_weights`, `ft_photos`) and all storage files from the private progress-photos bucket
+- Signs the user out after successful deletion
+- Error toast + safe fallback if deletion fails
+
+### PWA Service Worker Fix
+- Bumped cache name to `fittrack-v1.6` to bust stale caches on existing devices
+- HTML pages now use network-first strategy — new deployments always reach the network
+- `_next/static/` assets remain cache-first (content-hashed, safe to cache long-term)
+- Clerk, Supabase, and API routes are network-only (never cached)
+
+---
+
 ## v1.6.0 — 2026-04-07
 
 ### AI-Powered Onboarding
