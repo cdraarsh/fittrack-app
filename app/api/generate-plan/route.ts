@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText, Output } from 'ai';
-import { createXai } from '@ai-sdk/xai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { PLAN_SYSTEM_PROMPT, buildPlanUserPrompt } from '@/lib/aiPlan';
 import type { OnboardingProfile } from '@/lib/types';
@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Incomplete profile' }, { status: 400 });
     }
 
-    const xai = createXai({ apiKey: process.env.XAI_API_KEY });
+    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const { output: plan } = await generateText({
-      model: xai('grok-3'),
+      model: anthropic('claude-sonnet-4-6'),
       output: Output.object({ schema: AIPlanSchema }),
       system: PLAN_SYSTEM_PROMPT,
       prompt: buildPlanUserPrompt(profile),
