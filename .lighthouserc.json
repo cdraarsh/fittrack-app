@@ -1,6 +1,10 @@
 {
   "ci": {
     "collect": {
+      "startServerCommand": "npm start",
+      "startServerReadyPattern": "started server on",
+      "startServerReadyTimeout": 30000,
+      "url": ["http://localhost:3000/"],
       "numberOfRuns": 2,
       "settings": {
         "preset": "desktop",
