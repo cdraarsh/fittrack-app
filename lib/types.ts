@@ -159,6 +159,7 @@ export interface UserProfile {
   experience: 'beginner' | 'intermediate' | 'advanced';
   diet_style: 'no_restriction' | 'vegetarian' | 'vegan' | 'keto' | 'high_protein';
   foods_to_avoid: string;
+  equipment: 'full_gym' | 'dumbbells_only' | 'home_barbell' | 'bodyweight_only';
 }
 
 // Full profile sent to Claude — includes physical stats from Settings
@@ -167,6 +168,7 @@ export interface OnboardingProfile extends UserProfile {
   weight_kg: number;
   height_cm: number;
   gym_days_per_week: number;
+  gym_days: string[];           // e.g. ['monday', 'wednesday', 'friday']
   program_weeks: number;
 }
 

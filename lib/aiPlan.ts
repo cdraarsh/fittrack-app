@@ -15,14 +15,15 @@ When given a user profile, you will:
 
 Rules:
 - Weight loss: target 0.4–0.7 kg/week. Never below 1200 kcal for women or 1500 kcal for men.
-- Muscle gain: target 0.15–0.3 kg/week surplus. Keep deficit for recomp near 100–200 kcal.
+- Muscle gain: target 0.15–0.3 kg/week. Calorie surplus of 150–250 kcal above TDEE.
+- Recomp: calories at TDEE ±100 kcal (neither surplus nor significant deficit). Protein at the upper end (2.2 g/kg). Fat loss and muscle gain happen simultaneously — do not set a weight change target.
 - Protein: 1.8–2.2 g/kg of CURRENT bodyweight. Round to nearest 5g.
 - Fat: minimum 0.8 g/kg bodyweight, rounded to nearest 5g. Cap at 35% of calories.
 - Carbs: remainder after protein + fat calories. Round to nearest 5g.
 - Gym day vs rest day: reduce rest day carbs by 30–40%, not protein or fat.
 - Be specific and actionable. Vague outputs are useless.
 
-For the workout plan, generate exactly gym_days_per_week workout days. Rules:
+For the workout plan, generate exactly gym_days_per_week workout days in the same order as the provided gym day schedule. Use the actual day names to optimise recovery — e.g. if consecutive days are scheduled, split muscle groups to avoid overlap. Rules:
 - Split selection by frequency:
   - 2 days: Full Body A, Full Body B
   - 3 days: Push (chest/shoulders/triceps), Pull (back/biceps), Legs
@@ -36,10 +37,11 @@ For the workout plan, generate exactly gym_days_per_week workout days. Rules:
   - Weight loss: rep range 12–15, rest 45–75s, mandatory cardio 20–30 min
   - Muscle gain: rep range 6–12, rest 90–120s, light cardio 10–15 min
   - Recomp: rep range 10–12, rest 60–90s, moderate cardio 15–20 min
-- Starting loads: conservative estimates based on the person's bodyweight and experience. Beginners start light.
-- Exercise IDs: short snake_case strings (e.g. "bench", "squat", "rdl") — must be unique across all days.
+- Equipment: only prescribe exercises that are possible with the listed equipment. No barbell movements for "dumbbells_only". No machine exercises for "home_barbell" or "bodyweight_only".
+- Starting loads: use the user's bodyweight (BW) as the baseline. Beginner male: goblet squat ~10–15% BW, bench press ~20–25% BW, deadlift ~30–40% BW, OHP ~12–18% BW, row ~20–25% BW. Intermediate: squat ~60–80% BW, bench ~50–65% BW, deadlift ~80–100% BW. Scale female loads by 65–70%. Round to nearest 2.5 kg. Use null for bodyweight-only movements.
+- Exercise IDs: short snake_case strings — must be unique across all days. If the same movement appears on multiple days, append the day index (e.g. "bench_d1", "bench_d3"). Never reuse the same ID across different days.
 - Coaching cues: one specific, actionable sentence per exercise.
-- Cardio field: one specific prescription string (e.g. "Incline treadmill walk 12% grade 5.5 kph — 20 min").`;
+- Cardio field: one specific prescription string (e.g. "Incline treadmill walk 12% grade 5.5 kph — 20 min"). If no cardio is appropriate for a day, output exactly "None".`;
 
 export function buildPlanUserPrompt(profile: OnboardingProfile): string {
   const goalLabel = {
@@ -69,6 +71,13 @@ export function buildPlanUserPrompt(profile: OnboardingProfile): string {
     high_protein: 'High-protein focus',
   }[profile.diet_style];
 
+  const equipmentLabel = {
+    full_gym:       'Full commercial gym (barbells, cables, machines, dumbbells)',
+    dumbbells_only: 'Dumbbells only + bench (no barbell)',
+    home_barbell:   'Home gym with barbell + rack',
+    bodyweight_only:'Bodyweight only — no equipment',
+  }[profile.equipment];
+
   const weightDelta = profile.weight_kg - profile.target_weight_kg;
   const weightGoal = profile.goal !== 'muscle_gain'
     ? `\nTarget weight: ${profile.target_weight_kg} kg (needs to ${weightDelta > 0 ? `lose ${weightDelta.toFixed(1)} kg` : `gain ${Math.abs(weightDelta).toFixed(1)} kg`})`
@@ -85,11 +94,12 @@ Height: ${profile.height_cm} cm
 BMI: ${(profile.weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1)}
 Primary goal: ${goalLabel}${weightGoal}
 Program length: ${profile.program_weeks} weeks
-Gym days per week: ${profile.gym_days_per_week}
+Gym days per week: ${profile.gym_days_per_week} (${profile.gym_days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')})
 Activity outside gym: ${activityLabel}
 Training experience: ${experienceLabel}
 Diet style: ${dietLabel}
 Foods to avoid: ${profile.foods_to_avoid || 'None specified'}
+Equipment: ${equipmentLabel}
 ---
 
 Build a precise, personalised plan for this person. Be specific — generic outputs are useless.

@@ -36,6 +36,7 @@ export default function OnboardingWizard() {
   const [experience,    setExperience]    = useState<Experience>('beginner');
   const [dietStyle,     setDietStyle]     = useState<DietStyle>('no_restriction');
   const [foodsToAvoid,  setFoodsToAvoid]  = useState('');
+  const [equipment,     setEquipment]     = useState<UserProfile['equipment']>('full_gym');
 
   // Step 4 — schedule
   const [start,        setStart]        = useState(dk(new Date()));
@@ -107,7 +108,9 @@ export default function OnboardingWizard() {
         experience,
         diet_style: dietStyle,
         foods_to_avoid: foodsToAvoid,
+        equipment,
         gym_days_per_week: gymDays.length,
+        gym_days: gymDays,
         program_weeks: programWeeks,
       };
 
@@ -123,6 +126,7 @@ export default function OnboardingWizard() {
         age: +age, gender, target_weight_kg: +targetWeight,
         goal, activity_outside_gym: activity, experience,
         diet_style: dietStyle, foods_to_avoid: foodsToAvoid,
+        equipment,
       };
 
       await saveSettings({
@@ -161,6 +165,7 @@ export default function OnboardingWizard() {
       age: +age, gender, target_weight_kg: +targetWeight,
       goal, activity_outside_gym: activity, experience,
       diet_style: dietStyle, foods_to_avoid: foodsToAvoid,
+      equipment,
     };
 
     await saveSettings({
@@ -317,6 +322,26 @@ export default function OnboardingWizard() {
                       dietStyle === val ? 'bg-accent/10 border-accent/35 text-accent' : 'bg-bg3 border-border text-text3'
                     }`}>
                     {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-[10px] text-text3 uppercase font-bold mb-1.5 tracking-wider">Equipment Available</div>
+              <div className="flex flex-col gap-1.5">
+                {([
+                  ['full_gym',        'Full Gym',          'Barbells, cables, machines'],
+                  ['dumbbells_only',   'Dumbbells Only',    'Dumbbells + bench'],
+                  ['home_barbell',     'Home Barbell',      'Barbell + rack at home'],
+                  ['bodyweight_only',  'Bodyweight Only',   'No equipment'],
+                ] as const).map(([val, label, desc]) => (
+                  <button key={val} onClick={() => setEquipment(val)}
+                    className={`w-full py-2.5 px-4 rounded-xl text-left border transition-all ${
+                      equipment === val ? 'bg-accent/10 border-accent/35' : 'bg-bg3 border-border'
+                    }`}>
+                    <span className={`text-sm font-bold ${equipment === val ? 'text-accent' : 'text-text2'}`}>{label}</span>
+                    <span className="text-[10px] text-text3 ml-2">{desc}</span>
                   </button>
                 ))}
               </div>
