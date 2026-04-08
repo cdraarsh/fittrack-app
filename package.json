@@ -19,6 +19,7 @@
     "@ai-sdk/xai": "^3.0.79",
     "@anthropic-ai/sdk": "^0.82.0",
     "@clerk/nextjs": "^6.0.0",
+    "@sentry/nextjs": "^10.47.0",
     "@supabase/supabase-js": "^2.49.0",
     "ai": "^6.0.149",
     "chart.js": "^4.4.0",
