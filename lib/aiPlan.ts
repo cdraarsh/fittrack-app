@@ -23,20 +23,32 @@ Rules:
 - Gym day vs rest day: reduce rest day carbs by 30–40%, not protein or fat.
 - Be specific and actionable. Vague outputs are useless.
 
-For the workout plan, generate exactly gym_days_per_week workout days in the same order as the provided gym day schedule. Use the actual day names to optimise recovery — e.g. if consecutive days are scheduled, split muscle groups to avoid overlap. Rules:
-- Split selection by frequency:
-  - 2 days: Full Body A, Full Body B
-  - 3 days: Push (chest/shoulders/triceps), Pull (back/biceps), Legs
-  - 4 days: Upper A (push focus), Lower A (quad focus), Upper B (pull focus), Lower B (hinge focus)
-  - 5+ days: PPL + Upper + Lower
-- Volume by experience:
-  - Beginner: 3 sets, 4–5 exercises/day, compound-focused, higher reps (10–15)
-  - Intermediate: 3–4 sets, 5–6 exercises, mix of compounds and isolation
-  - Advanced: 4–5 sets, 6–7 exercises, periodised rep ranges
-- Goal adjustments:
-  - Weight loss: rep range 12–15, rest 45–75s, mandatory cardio 20–30 min
-  - Muscle gain: rep range 6–12, rest 90–120s, light cardio 10–15 min
-  - Recomp: rep range 10–12, rest 60–90s, moderate cardio 15–20 min
+For the workout plan, generate exactly gym_days_per_week workout days in the same order as the gym schedule provided. Follow this decision process:
+
+STEP 1 — Choose split type based on frequency:
+  2 days → Full Body A / Full Body B
+  3 days → Push (chest/shoulders/triceps) / Pull (back/biceps) / Legs
+  4 days → Upper A (push focus) / Lower A (quad focus) / Upper B (pull focus) / Lower B (hinge/glute focus)
+  5 days → Push / Pull / Legs / Upper / Lower
+  6 days → Push / Pull / Legs / Push / Pull / Legs
+
+STEP 2 — Assign splits to the actual scheduled days using the rest-gap data provided:
+  - "CONSECUTIVE" (0 rest days between two sessions): the two sessions MUST train different primary muscle groups.
+    Valid consecutive pairings: Upper+Lower, Push+Legs, Pull+Legs, Lower+Upper.
+    NEVER pair: Push+Pull, Upper+Upper, Lower+Lower, or any two sessions that heavily overlap the same muscles.
+  - "1+ rest days" between sessions: any split pairing is acceptable.
+  - If the standard split order above would cause a consecutive-day muscle conflict, REORDER the splits to resolve it. Always prioritise recovery over fixed ordering.
+  - Include the day name and split in day_label (e.g. "Monday — Upper A (Push Focus)").
+
+STEP 3 — Volume by experience:
+  Beginner: 3 sets, 4–5 exercises/day, compound-focused, higher reps (10–15)
+  Intermediate: 3–4 sets, 5–6 exercises, mix of compounds and isolation
+  Advanced: 4–5 sets, 6–7 exercises, periodised rep ranges
+
+STEP 4 — Goal adjustments:
+  Weight loss: rep range 12–15, rest 45–75s, mandatory cardio 20–30 min
+  Muscle gain: rep range 6–12, rest 90–120s, light cardio 10–15 min
+  Recomp: rep range 10–12, rest 60–90s, moderate cardio 15–20 min
 - Equipment: only prescribe exercises that are possible with the listed equipment. No barbell movements for "dumbbells_only". No machine exercises for "home_barbell" or "bodyweight_only".
 - Starting loads: use the user's bodyweight (BW) as the baseline. Beginner male: goblet squat ~10–15% BW, bench press ~20–25% BW, deadlift ~30–40% BW, OHP ~12–18% BW, row ~20–25% BW. Intermediate: squat ~60–80% BW, bench ~50–65% BW, deadlift ~80–100% BW. Scale female loads by 65–70%. Round to nearest 2.5 kg. Use null for bodyweight-only movements.
 - Exercise IDs: short snake_case strings — must be unique across all days. If the same movement appears on multiple days, append the day index (e.g. "bench_d1", "bench_d3"). Never reuse the same ID across different days.
@@ -78,6 +90,16 @@ export function buildPlanUserPrompt(profile: OnboardingProfile): string {
     bodyweight_only:'Bodyweight only — no equipment',
   }[profile.equipment];
 
+  const DAY_ORDER = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const gymDayIndices = profile.gym_days.map(d => DAY_ORDER.indexOf(d.toLowerCase()));
+  const scheduleLines = profile.gym_days.map((day, i) => {
+    if (i === 0) return `  Day ${i + 1}: ${day.charAt(0).toUpperCase() + day.slice(1)}`;
+    const gap = gymDayIndices[i] - gymDayIndices[i - 1];
+    const restDays = gap > 0 ? gap - 1 : 7 + gap - 1; // handle week wrap
+    const gapLabel = restDays === 0 ? 'CONSECUTIVE — no rest before this session' : `${restDays} rest day${restDays > 1 ? 's' : ''} before this session`;
+    return `  Day ${i + 1}: ${day.charAt(0).toUpperCase() + day.slice(1)} (${gapLabel})`;
+  }).join('\n');
+
   const weightDelta = profile.weight_kg - profile.target_weight_kg;
   const weightGoal = profile.goal !== 'muscle_gain'
     ? `\nTarget weight: ${profile.target_weight_kg} kg (needs to ${weightDelta > 0 ? `lose ${weightDelta.toFixed(1)} kg` : `gain ${Math.abs(weightDelta).toFixed(1)} kg`})`
@@ -94,7 +116,9 @@ Height: ${profile.height_cm} cm
 BMI: ${(profile.weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1)}
 Primary goal: ${goalLabel}${weightGoal}
 Program length: ${profile.program_weeks} weeks
-Gym days per week: ${profile.gym_days_per_week} (${profile.gym_days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')})
+Gym days per week: ${profile.gym_days_per_week}
+Gym schedule (with recovery gaps):
+${scheduleLines}
 Activity outside gym: ${activityLabel}
 Training experience: ${experienceLabel}
 Diet style: ${dietLabel}
