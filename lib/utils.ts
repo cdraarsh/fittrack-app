@@ -142,6 +142,40 @@ export function todayIsGymDay(settings: Settings | null): boolean {
 }
 
 // ─── PRs ─────────────────────────────────────────────────────
+export function computePRHistory(
+  dayCache: Record<string, DayData>,
+  workoutMap?: Record<string, WorkoutTemplate>
+): Record<string, PREntry[]> {
+  const exNames: Record<string, string> = {};
+  for (const wo of Object.values(workoutMap ?? WORKOUTS))
+    for (const ex of wo.exercises)
+      exNames[ex.id] = ex.name;
+
+  // Collect all done sets with weight, sorted chronologically
+  const allSets: Array<{ exId: string; weight: number; reps?: number; date: string }> = [];
+  for (const [dateStr, dayData] of Object.entries(dayCache)) {
+    for (const [exId, exData] of Object.entries(dayData?.wo ?? {})) {
+      for (const s of exData?.sets ?? []) {
+        if (!s?.done || !s?.weight || s.weight <= 0) continue;
+        allSets.push({ exId, weight: s.weight, reps: s.reps, date: dateStr });
+      }
+    }
+  }
+  allSets.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Only keep entries where a new max is set
+  const history: Record<string, PREntry[]> = {};
+  const maxSeen: Record<string, number> = {};
+  for (const { exId, weight, reps, date } of allSets) {
+    if (!maxSeen[exId] || weight > maxSeen[exId]) {
+      maxSeen[exId] = weight;
+      if (!history[exId]) history[exId] = [];
+      history[exId].push({ weight, reps, date, name: exNames[exId] ?? exId });
+    }
+  }
+  return history;
+}
+
 export function computePRs(dayCache: Record<string, DayData>, workoutMap?: Record<string, WorkoutTemplate>): Record<string, PREntry> {
   const exNames: Record<string, string> = {};
   for (const wo of Object.values(workoutMap ?? WORKOUTS))

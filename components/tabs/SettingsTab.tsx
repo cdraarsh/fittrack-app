@@ -7,6 +7,7 @@ import { DAYS, DEFAULT_GYM_DAYS } from '@/lib/constants';
 import { computeTargetsFromTDEE, dk } from '@/lib/utils';
 import { toast } from '../shared/Toast';
 
+
 export default function SettingsTab() {
   const { settings, saveSettings, dayCache, getWeightLog, deleteAllData } = useApp();
   const { signOut } = useClerk();
@@ -15,6 +16,11 @@ export default function SettingsTab() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [showDeleteZone, setShowDeleteZone] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+    return Notification.permission as 'default' | 'granted' | 'denied';
+  });
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const [name,      setName]      = useState(s?.name ?? '');
   const [weight,    setWeight]    = useState(s?.weight_start ?? 80);
@@ -43,6 +49,49 @@ export default function SettingsTab() {
     if (gymDays.length === 0) { toast('Select at least 1 gym day'); return; }
     await saveSettings({ name, weight_start: weight, height, startDate, gymDays, cals_gym: calsGym, cals_rest: calsRest, protein, fat, onboarded: true, programWeeks });
     toast('Settings saved ✓');
+  }
+
+  async function enableNotifications() {
+    if (notifStatus === 'unsupported') return;
+    setNotifLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifStatus(permission as 'default' | 'granted' | 'denied');
+      if (permission !== 'granted') return;
+
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      });
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription.toJSON()),
+      });
+      toast('Workout reminders enabled ✓');
+    } catch (e) {
+      console.error('push subscribe error:', e);
+      toast('Could not enable notifications');
+    } finally {
+      setNotifLoading(false);
+    }
+  }
+
+  async function disableNotifications() {
+    setNotifLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      await sub?.unsubscribe();
+      await fetch('/api/push/subscribe', { method: 'DELETE' });
+      toast('Notifications disabled');
+    } catch (e) {
+      console.error('push unsubscribe error:', e);
+    } finally {
+      setNotifLoading(false);
+    }
   }
 
   async function handleDeleteAll() {
@@ -165,6 +214,44 @@ export default function SettingsTab() {
         </div>
       </div>
 
+      {/* Notifications */}
+      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Notifications</div>
+        {notifStatus === 'unsupported' ? (
+          <div className="text-xs text-text3 py-2">Push notifications are not supported in this browser.</div>
+        ) : notifStatus === 'denied' ? (
+          <div className="text-xs text-text3 py-2">
+            Notifications are blocked. Enable them in your browser settings, then reload.
+          </div>
+        ) : (
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <div className="text-sm text-text2">Workout reminders</div>
+              <div className="text-xs text-text3">
+                {notifStatus === 'granted' ? 'Daily push at 7 AM on gym days' : 'Get reminded on every gym day'}
+              </div>
+            </div>
+            {notifStatus === 'granted' ? (
+              <button
+                onClick={disableNotifications}
+                disabled={notifLoading}
+                className="text-xs font-bold px-3 py-1.5 bg-bg3 border border-border rounded-lg text-text2 disabled:opacity-50"
+              >
+                {notifLoading ? '…' : 'Disable'}
+              </button>
+            ) : (
+              <button
+                onClick={enableNotifications}
+                disabled={notifLoading}
+                className="text-xs font-bold px-3 py-1.5 bg-accent/10 border border-accent/30 rounded-lg text-accent disabled:opacity-50"
+              >
+                {notifLoading ? '…' : 'Enable'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Danger Zone */}
       <div className="bg-bg1 border border-red-500/20 rounded-card p-4 mb-3">
         <div className="text-[13px] font-black uppercase tracking-widest text-red-400 mb-3">Danger Zone</div>
@@ -216,7 +303,7 @@ export default function SettingsTab() {
         )}
       </div>
 
-      <div className="text-center text-[11px] text-text3 pb-4">FitTrack v1.6</div>
+      <div className="text-center text-[11px] text-text3 pb-4">FitTrack v1.7</div>
     </div>
   );
 }

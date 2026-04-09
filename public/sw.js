@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fittrack-v1.6';
+const CACHE_NAME = 'fittrack-v1.7';
 const STATIC_ASSETS = [
   '/manifest.json',
 ];
@@ -69,4 +69,45 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+});
+
+// ─── Push Notifications ───────────────────────────────────────
+self.addEventListener('push', event => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: 'FitTrack', body: event.data.text() };
+  }
+
+  const options = {
+    body: payload.body ?? '',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+    tag: payload.tag ?? 'fittrack',
+    data: { url: payload.url ?? '/dashboard' },
+    actions: payload.actions ?? [],
+    requireInteraction: false,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? 'FitTrack', options)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? '/dashboard';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('/dashboard') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
 });

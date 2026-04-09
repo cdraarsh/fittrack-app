@@ -51,6 +51,16 @@ export interface CheckInV2 {
   nextWeekGoal?: string;
 }
 
+export interface RecoveryData {
+  sleep_hours?: number;    // 4–12
+  sleep_quality?: number;  // 1–5
+  soreness?: number;       // 1–5 (overall body soreness)
+  energy?: number;         // 1–5
+  mood?: number;           // 1–5
+  hrv?: number;            // ms, manual entry
+  resting_hr?: number;     // bpm, manual entry
+}
+
 export interface DayData {
   wo: WorkoutData;
   cardio?: boolean;
@@ -59,6 +69,7 @@ export interface DayData {
   notes: string;
   checkin?: string;      // legacy v1
   checkin_v2?: CheckInV2; // v1.3
+  recovery?: RecoveryData; // v1.7
 }
 
 export interface WeightEntry {

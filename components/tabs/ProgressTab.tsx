@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { useApp } from '@/lib/store';
-import { getWeekNum, calcConsistency, computePRs, dk } from '@/lib/utils';
+import { getWeekNum, calcConsistency, dk } from '@/lib/utils';
 import { fmtShort } from '@/lib/utils';
 import StreakCard from '../streaks/StreakCard';
 import PhotoGrid from '../progress/PhotoGrid';
 import ShareCard from '../progress/ShareCard';
-import type { MeasurementEntry } from '@/lib/types';
+import PRTimeline from '../progress/PRTimeline';
+import type { MeasurementEntry, RecoveryData } from '@/lib/types';
 
 Chart.register(...registerables);
 
@@ -34,9 +35,17 @@ export default function ProgressTab() {
   const bmi         = +(curW / (hM * hM)).toFixed(1);
   const weekNum     = getWeekNum(settings);
   const cons        = calcConsistency(settings, dayCache);
-  const prs         = computePRs(dayCache);
-  const prEntries   = Object.values(prs).filter(p => p.weight > 0);
   const mlog        = (settings?.measurements ?? []).slice().sort((a,b) => a.date.localeCompare(b.date));
+
+  // Recovery trends — last 14 days with any recovery data
+  const recoveryDays = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    const dateStr = dk(d);
+    const rec: RecoveryData = dayCache[dateStr]?.recovery ?? {};
+    return { date: dateStr, label: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2), ...rec };
+  });
+  const hasRecovery = recoveryDays.some(d => d.energy != null || d.sleep_quality != null);
   const mLatest     = mlog[mlog.length-1];
   const mFirst      = mlog[0];
   const mFields     = [['Waist','waist'],['Chest','chest'],['L.Arm','leftArm'],['R.Arm','rightArm'],['Hips','hips']] as const;
@@ -198,28 +207,70 @@ export default function ProgressTab() {
         )}
       </div>
 
-      {/* PRs */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[13px] font-black uppercase tracking-widest text-text2">Personal Records</div>
-          <div className="text-xs text-text3">{prEntries.length} lifts</div>
-        </div>
-        {prEntries.length === 0 ? (
-          <div className="text-center py-8 text-text3 text-sm">Log sets to start tracking PRs</div>
-        ) : (
-          prEntries.sort((a,b) => b.weight - a.weight).map(pr => (
-            <div key={pr.name} className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
-              <div>
-                <div className="text-sm font-semibold">{pr.name}</div>
-                <div className="text-[11px] text-text3">{fmtShort(pr.date)}{pr.reps ? ` · ${pr.reps} reps` : ''}</div>
-              </div>
-              <div className="font-condensed text-xl font-black text-warn">{pr.weight} <span className="text-sm font-semibold">kg</span></div>
-            </div>
-          ))
-        )}
-      </div>
+      {/* PRs with timeline */}
+      <PRTimeline settings={settings} dayCache={dayCache} />
 
       <StreakCard />
+
+      {/* Recovery trends */}
+      {hasRecovery && (
+        <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+          <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Recovery Trends (14 days)</div>
+          <div className="flex items-end gap-1 h-20 mb-2">
+            {recoveryDays.map(d => {
+              const e = d.energy ?? 0;
+              const sq = d.sleep_quality ?? 0;
+              return (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5">
+                  {e > 0 && (
+                    <div
+                      className="w-full rounded-t-sm bg-accent/70"
+                      style={{ height: `${(e / 5) * 64}px` }}
+                      title={`Energy: ${e}/5`}
+                    />
+                  )}
+                  {sq > 0 && e === 0 && (
+                    <div
+                      className="w-full rounded-t-sm bg-purple/60"
+                      style={{ height: `${(sq / 5) * 64}px` }}
+                      title={`Sleep: ${sq}/5`}
+                    />
+                  )}
+                  {e === 0 && sq === 0 && (
+                    <div className="w-full h-1 bg-bg3 rounded" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-1 mb-2">
+            {recoveryDays.map(d => (
+              <div key={d.date} className="flex-1 text-center text-[9px] text-text3">{d.label}</div>
+            ))}
+          </div>
+          <div className="flex gap-3 text-[10px] text-text3">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-accent/70 inline-block" />Energy</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-purple/60 inline-block" />Sleep quality</span>
+          </div>
+          {/* Soreness dots */}
+          {recoveryDays.some(d => d.soreness != null) && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">Soreness (14 days)</div>
+              <div className="flex gap-1">
+                {recoveryDays.map(d => {
+                  const s = d.soreness ?? 0;
+                  const color = s === 0 ? 'bg-bg3' : s <= 2 ? 'bg-accent/60' : s <= 3 ? 'bg-warn/70' : 'bg-danger/70';
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                      <div className={`w-3 h-3 rounded-full ${color}`} title={s > 0 ? `Soreness: ${s}/5` : 'No data'} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <ShareCard />
 

@@ -9,6 +9,7 @@ import { computeWeeklySummary } from '@/lib/utils';
 import StreakCard from '../streaks/StreakCard';
 import FridayCheckIn from '../checkin/FridayCheckIn';
 import CoachNotes from '../notes/CoachNotes';
+import RecoveryPanel from '../recovery/RecoveryPanel';
 
 export default function TodayTab() {
   const { settings, getDayData, saveDayData, dayCache, weightCache, setCurrentTab } = useApp();
@@ -196,6 +197,8 @@ export default function TodayTab() {
           className="w-full bg-bg2 border border-border rounded-[10px] text-sm text-text1 p-3 resize-none outline-none focus:border-accent min-h-[80px] leading-relaxed"
         />
       </div>
+
+      <RecoveryPanel />
 
       {/* Friday check-in (v1.3) */}
       {isFriday && <FridayCheckIn />}
