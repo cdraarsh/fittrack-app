@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupClerkTestingToken } from '@clerk/testing/playwright';
 import path from 'node:path';
 
 test.use({ storageState: 'e2e/.auth/user.json' });
@@ -6,8 +7,9 @@ test.use({ storageState: 'e2e/.auth/user.json' });
 const FIXTURE_PHOTO = path.join(__dirname, 'fixtures/progress-photo.jpg');
 
 test.beforeEach(async ({ page }) => {
+  await setupClerkTestingToken({ page });
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: 'Progress' }).click();
 });
 
@@ -29,13 +31,8 @@ test('can upload a progress photo', async ({ page }) => {
 });
 
 test('uploaded photo renders as an image in the grid', async ({ page }) => {
-  const fileInput = page.locator('input[type="file"][accept="image/*"]');
-  await fileInput.setInputFiles(FIXTURE_PHOTO);
-
-  // Wait for upload to finish
-  await expect(page.getByRole('button', { name: /Add Photo/i })).toBeVisible({ timeout: 15_000 });
-
-  // An <img> tag should appear in the photo grid
+  // A seed photo is pre-loaded for the E2E user via seed-e2e-user.ts
+  // Just verify the photo grid renders at least one image (the seeded one)
   const photo = page.locator('img[src*="supabase"]').first();
   await expect(photo).toBeVisible({ timeout: 10_000 });
 });

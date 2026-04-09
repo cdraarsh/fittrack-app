@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ plan });
   } catch (err) {
-    console.error('generate-plan error:', err);
+    console.error('generate-plan error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }

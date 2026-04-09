@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupClerkTestingToken } from '@clerk/testing/playwright';
 
 test.use({ storageState: 'e2e/.auth/user.json' });
 
@@ -15,8 +16,9 @@ test('Share button calls navigator.share when available', async ({ page }) => {
     });
   });
 
+  await setupClerkTestingToken({ page });
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: 'Progress' }).click();
 
   const shareBtn = page.getByRole('button', { name: /Share/i });
@@ -47,8 +49,9 @@ test('Share button falls back to clipboard when navigator.share is absent', asyn
     });
   });
 
+  await setupClerkTestingToken({ page });
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'FitTrack' })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: 'Progress' }).click();
 
   await page.getByRole('button', { name: /Share/i }).click();

@@ -7,7 +7,7 @@ export default function SignInPage() {
         <h1 className="font-condensed text-5xl font-black gradient-text tracking-tight">FitTrack</h1>
         <p className="text-text3 text-sm mt-1">16-Week Transformation Program</p>
       </div>
-      <SignIn routing="hash" />
+      <SignIn routing="hash" forceRedirectUrl="/dashboard" />
     </div>
   );
 }
