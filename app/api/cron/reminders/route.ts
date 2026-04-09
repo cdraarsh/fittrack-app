@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Prevent Next.js from statically analyzing this route at build time
+export const dynamic = 'force-dynamic';
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export async function GET(req: NextRequest) {
-  // Protect with CRON_SECRET (set in Vercel env + vercel.json bearer check)
+  // Protect with CRON_SECRET
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Init inside handler so env vars are available at runtime, not build time
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
   webpush.setVapidDetails(
     process.env.VAPID_EMAIL!,
@@ -24,7 +28,6 @@ export async function GET(req: NextRequest) {
 
   const todayName = DAY_NAMES[new Date().getUTCDay()];
 
-  // Fetch all subscriptions with their settings
   const { data: subs, error } = await supabaseAdmin
     .from('ft_push_subscriptions')
     .select('user_id, subscription');
@@ -33,7 +36,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ sent: 0 });
   }
 
-  // Fetch settings for all subscribed users
   const userIds = subs.map(s => s.user_id);
   const { data: settingsRows } = await supabaseAdmin
     .from('ft_settings')
@@ -62,7 +64,6 @@ export async function GET(req: NextRequest) {
     })
   );
 
-  // Log any send failures for Sentry to pick up
   results.forEach(r => {
     if (r.status === 'rejected') console.error('push send failed:', r.reason);
   });
