@@ -64,12 +64,26 @@ export async function POST(req: NextRequest) {
     }
 
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const { output: plan } = await generateText({
+    const userPrompt = buildPlanUserPrompt(profile);
+
+    console.log('[generate-plan] request', JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      system: PLAN_SYSTEM_PROMPT,
+      prompt: userPrompt,
+    }));
+
+    const { output: plan, usage, finishReason } = await generateText({
       model: anthropic('claude-sonnet-4-6'),
       output: Output.object({ schema: AIPlanSchema }),
       system: PLAN_SYSTEM_PROMPT,
-      prompt: buildPlanUserPrompt(profile),
+      prompt: userPrompt,
     });
+
+    console.log('[generate-plan] response', JSON.stringify({
+      finishReason,
+      usage,
+      plan,
+    }));
 
     return NextResponse.json({ plan });
   } catch (err) {

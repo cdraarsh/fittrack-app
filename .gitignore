@@ -13,3 +13,4 @@ test-results/
 
 # Local MCP config
 .mcp.json
+.gitnexus
