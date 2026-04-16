@@ -169,27 +169,27 @@ export default function TodayTab() {
       {coachTrigger && <CoachCard trigger={coachTrigger} context={coachContext} />}
 
       {/* Targets */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-[13px] font-black uppercase tracking-widest text-text2">Today's Targets</div>
-          <div className="text-[11px] text-text3">{isGymDay ? 'Gym Day' : 'Rest Day'}</div>
+          <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink">Today's Targets</div>
+          <div className="font-mono text-[11px] uppercase tracking-wider text-ink-2 bg-surface border border-hairline-2 rounded-full px-2 py-0.5">{isGymDay ? 'Gym Day' : 'Rest Day'}</div>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { val: targets.calories, label: 'kcal',    color: 'text-energy' },
-            { val: `${targets.protein}g`, label: 'Protein', color: 'text-info' },
-            { val: `${targets.carbs}g`,   label: 'Carbs',   color: 'text-purple' },
-            { val: `${targets.fat}g`,     label: 'Fat',     color: 'text-danger' },
-          ].map(({ val, label, color }) => (
-            <div key={label} className="bg-bg2 border border-border rounded-[10px] p-3 text-center">
-              <div className={`font-condensed text-xl font-black ${color}`}>{val}</div>
-              <div className="text-[10px] text-text3 uppercase tracking-wider font-bold mt-0.5">{label}</div>
+            { val: targets.calories, label: 'kcal'    },
+            { val: `${targets.protein}g`, label: 'Protein' },
+            { val: `${targets.carbs}g`,   label: 'Carbs'   },
+            { val: `${targets.fat}g`,     label: 'Fat'     },
+          ].map(({ val, label }) => (
+            <div key={label} className="bg-surface-2 border border-hairline rounded-sm p-3 text-center">
+              <div className="font-mono tabular-nums text-xl font-semibold text-ink">{val}</div>
+              <div className="font-mono text-[10px] text-ink-3 uppercase tracking-wider font-bold mt-0.5">{label}</div>
             </div>
           ))}
         </div>
-        <div className="flex justify-between text-xs text-text3 mt-3">
-          <span>Logged: <strong className="text-text1">{totCal} kcal</strong></span>
-          <span>Left: <strong className={totCal > targets.calories ? 'text-danger' : 'text-accent'}>{targets.calories - totCal} kcal</strong></span>
+        <div className="flex justify-between text-xs text-ink-3 mt-3">
+          <span>Logged: <strong className="font-mono tabular-nums text-ink">{totCal} kcal</strong></span>
+          <span>Left: <strong className={`font-mono tabular-nums ${totCal > targets.calories ? 'text-mustard' : 'text-sage'}`}>{targets.calories - totCal} kcal</strong></span>
         </div>
       </div>
 
