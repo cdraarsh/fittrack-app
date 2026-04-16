@@ -1,15 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { Droplets, Moon, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Droplets, Moon, XCircle, Layers, TrendingUp, Flame, Trophy } from 'lucide-react';
+
+const PHASE_ICONS = {
+  foundation: <Layers size={20} className="text-purple" />,
+  build:      <TrendingUp size={20} className="text-purple" />,
+  strength:   <Flame size={20} className="text-purple" />,
+  peak:       <Trophy size={20} className="text-purple" />,
+} as Record<string, React.ReactNode>;
 import { useApp } from '@/lib/store';
 import { DAYS } from '@/lib/constants';
-import { getTargets, getWeekNum, getDayDateInWeek, dk, isWoDone, getPhaseInfo, getProgramWeeks, getWorkoutMap } from '@/lib/utils';
+import { getTargets, getWeekNum, getDayDateInWeek, dk, isWoDone, getPhaseInfo, getProgramWeeks, getWorkoutMap, todayIsGymDay } from '@/lib/utils';
 import { computeWeeklySummary } from '@/lib/utils';
 import StreakCard from '../streaks/StreakCard';
 import FridayCheckIn from '../checkin/FridayCheckIn';
 import CoachNotes from '../notes/CoachNotes';
 import RecoveryPanel from '../recovery/RecoveryPanel';
+import CoachCard from '../coach/CoachCard';
+import type { CoachTrigger, CoachContext } from '@/lib/aiCoach';
 
 export default function TodayTab() {
   const { settings, getDayData, saveDayData, dayCache, weightCache, setCurrentTab } = useApp();
@@ -30,6 +39,75 @@ export default function TodayTab() {
   const workoutMap = getWorkoutMap(settings);
   const wo         = workoutMap[todayName];
   const water   = data.check?.water ?? 0;
+
+  // ─── Coach trigger evaluation ──────────────────────────────────────────────
+  const hour = today.getHours();
+
+  // missed_workout: gym day + no sets logged + past 9pm
+  const hasAnySets = wo
+    ? wo.exercises.some(ex => (data.wo?.[ex.id]?.sets ?? []).some(s => s?.done))
+    : false;
+  const isMissedWorkout = isGymDay && !hasAnySets && hour >= 21;
+
+  // end_of_week: Sunday + at least 1 workout done this week
+  const recentKeys = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today); d.setDate(d.getDate() - i); return dk(d);
+  });
+  const sessionsThisWeek = recentKeys.filter(k => {
+    const dayData = dayCache[k];
+    if (!dayData?.wo) return false;
+    const wm = getWorkoutMap(settings);
+    const dayName = DAYS[new Date(k).getDay()];
+    return wm[dayName]?.exercises.some(ex =>
+      (dayData.wo?.[ex.id]?.sets ?? []).some(s => s?.done)
+    );
+  }).length;
+  const isEndOfWeek = isSunday && sessionsThisWeek >= 1;
+
+  // phase_transition: only on the first day of the week that crosses a phase boundary
+  // Without the day-of-week check, the card would appear all 7 days of the transition week.
+  const prevWeekNum = Math.max(1, weekNum - 1);
+  const prevPct = (prevWeekNum - 1) / totalWeeks;
+  const curPct  = (weekNum - 1) / totalWeeks;
+  const programStartDayOfWeek = settings ? new Date(settings.startDate).getDay() : -1;
+  const isPhaseTransition =
+    weekNum > 1 &&
+    Math.floor(prevPct / 0.25) < Math.floor(curPct / 0.25) &&
+    today.getDay() === programStartDayOfWeek;
+
+  // calorie_streak_broken: 3+ consecutive days with meals logged, 0 today, past 7pm
+  const hasLogged3Days = recentKeys.slice(1, 4).every(k => (dayCache[k]?.meals?.length ?? 0) > 0);
+  const isCalorieStreakBroken = hasLogged3Days && meals.length === 0 && hour >= 19;
+
+  const coachTrigger: CoachTrigger | null =
+    isMissedWorkout      ? 'missed_workout'        :
+    isEndOfWeek          ? 'end_of_week'            :
+    isPhaseTransition    ? 'phase_transition'       :
+    isCalorieStreakBroken ? 'calorie_streak_broken'  :
+    null;
+
+  // Context object passed to the coach API
+  const gymDayCalTarget = getTargets(settings, true).calories;
+  const avgCalsThisWeek = recentKeys.slice(0, 7).reduce((sum, k) => {
+    const m = dayCache[k]?.meals ?? [];
+    return sum + m.reduce((s, e) => s + e.calories, 0);
+  }, 0) / 7;
+  const completionRate = totalWeeks > 0
+    ? Math.round((sessionsThisWeek / Math.max(1, settings?.gymDays.length ?? 3)) * 100)
+    : 0;
+
+  const coachContext: CoachContext = {
+    name:           settings?.name ?? 'there',
+    weekNum,
+    totalWeeks,
+    phase:          phase.phase,
+    completionRate: Math.min(100, completionRate),
+    avgCals:        Math.round(avgCalsThisWeek),
+    targetCals:     gymDayCalTarget,
+    isGymDay,
+    trigger:        coachTrigger ?? 'user_initiated',
+  };
+  // ──────────────────────────────────────────────────────────────────────────
 
   async function setWater(n: number) {
     const cur = data.check?.water ?? 0;
@@ -78,7 +156,7 @@ export default function TodayTab() {
       {/* Phase card */}
       {phase && (
         <div className="flex items-center gap-3 bg-gradient-to-br from-purple/5 to-info/5 border border-purple/18 rounded-card p-3.5 mb-3">
-          <div className="w-10 h-10 bg-purple/10 rounded-[10px] flex items-center justify-center text-xl flex-shrink-0">{phase.icon}</div>
+          <div className="w-10 h-10 bg-purple/10 rounded-[10px] flex items-center justify-center flex-shrink-0">{PHASE_ICONS[phase.icon]}</div>
           <div>
             <div className="text-[10px] text-purple font-black uppercase tracking-wider mb-0.5">Week {weekNum}/{totalWeeks} · {phase.weeks}</div>
             <div className="font-condensed text-base font-black">{phase.phase}</div>
@@ -86,6 +164,9 @@ export default function TodayTab() {
           </div>
         </div>
       )}
+
+      {/* AI Coach */}
+      {coachTrigger && <CoachCard trigger={coachTrigger} context={coachContext} />}
 
       {/* Targets */}
       <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
@@ -95,7 +176,7 @@ export default function TodayTab() {
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { val: targets.calories, label: 'kcal',    color: 'text-warn' },
+            { val: targets.calories, label: 'kcal',    color: 'text-energy' },
             { val: `${targets.protein}g`, label: 'Protein', color: 'text-info' },
             { val: `${targets.carbs}g`,   label: 'Carbs',   color: 'text-purple' },
             { val: `${targets.fat}g`,     label: 'Fat',     color: 'text-danger' },
@@ -124,12 +205,12 @@ export default function TodayTab() {
                 <div className="text-[13px] font-black uppercase tracking-widest text-text2">{wo.name}</div>
                 <div className="text-xs text-text3 mt-0.5">{doneSets} / {totSets} sets logged</div>
               </div>
-              <div className={`font-condensed text-3xl font-black ${p === 100 ? 'text-accent' : 'text-text2'}`}>{p}%</div>
+              <div className={`font-condensed text-3xl font-black ${p === 100 ? 'text-accent' : p > 0 ? 'text-energy' : 'text-text2'}`}>{p}%</div>
             </div>
-            <div className="h-1.5 bg-bg3 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-accent to-green-400 rounded-full transition-all" style={{ width: `${p}%` }} />
+            <div className="h-2.5 bg-bg3 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-energy to-accent rounded-full transition-all duration-300" style={{ width: `${p}%` }} />
             </div>
-            <button onClick={() => setCurrentTab('workouts')} className="mt-3 w-full py-3 bg-gradient-to-r from-accent to-green-400 text-black font-bold rounded-[10px] text-sm">
+            <button onClick={() => setCurrentTab('workouts')} className="mt-3 w-full py-3 bg-gradient-to-r from-energy to-accent text-black font-bold rounded-[10px] text-sm cursor-pointer active:scale-[0.97] transition-transform">
               Open Workout Log →
             </button>
           </div>
@@ -153,7 +234,7 @@ export default function TodayTab() {
           <div className="flex gap-1.5 flex-wrap justify-end max-w-[200px]">
             {[1,2,3,4,5,6,7].map(i => (
               <button key={i} onClick={() => setWater(i)}
-                className={`min-w-[36px] min-h-[36px] rounded-lg border flex items-center justify-center transition-colors duration-150 cursor-pointer ${
+                className={`min-w-[36px] min-h-[36px] rounded-lg border flex items-center justify-center transition-colors duration-150 cursor-pointer active:scale-90 ${
                   water >= i ? 'bg-info/15 border-info/40 text-info' : 'bg-bg3 border-border text-text3/40'
                 }`}>
                 <Droplets size={14} />

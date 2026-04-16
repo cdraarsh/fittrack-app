@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronRight, Check } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DAYS } from '@/lib/constants';
 import { getDayDateInWeek, dk, isWoDone, getWorkoutMap } from '@/lib/utils';
@@ -47,7 +48,7 @@ export default function WorkoutsTab() {
 
   return (
     <div>
-      <p className="text-xs text-text3 mb-4">Enter weight + reps, then tap ✓ to mark sets done.</p>
+      <p className="text-xs text-text3 mb-4">Enter weight + reps, then tap the checkmark to mark sets done.</p>
       {Object.entries(getWorkoutMap(settings)).map(([dayName, wo]) => {
         const dayDate = getDayDateInWeek(dayName, settings);
         const isToday = dk(dayDate) === dk(today);
@@ -71,7 +72,7 @@ export default function WorkoutsTab() {
               </div>
               <div className="flex items-center gap-2">
                 {done && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/22">Done</span>}
-                <span className={`text-text3 text-xl transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                <ChevronRight size={18} className={`text-text3 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} />
               </div>
             </button>
 
@@ -89,7 +90,7 @@ export default function WorkoutsTab() {
                       <div className="font-condensed text-base font-bold">{ex.name}</div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/20 uppercase">Custom</span>
-                        {isToday && <button onClick={() => deleteCustomEx(dayName, idx)} className="text-danger/60 hover:text-danger text-sm">✕</button>}
+                        {isToday && <button onClick={() => deleteCustomEx(dayName, idx)} className="text-danger/60 hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>}
                       </div>
                     </div>
                     <div className="text-[11px] text-text3">{ex.sets} × {ex.reps} reps · Rest {ex.rest}</div>
@@ -142,7 +143,7 @@ export default function WorkoutsTab() {
                           ? 'bg-accent/10 border-accent/28 text-accent'
                           : 'bg-info/9 border-info/18 text-info'
                       }`}>
-                      {dayData.cardio ? 'Cardio Done ✓' : 'Mark Cardio Done'}
+                      {dayData.cardio ? <span className="flex items-center justify-center gap-1.5"><Check size={14} /> Cardio Done</span> : 'Mark Cardio Done'}
                     </button>
                   )}
                 </div>

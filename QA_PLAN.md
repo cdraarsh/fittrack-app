@@ -1,7 +1,7 @@
 # FitTrack QA Plan
 
 > **Owner:** Aarsh
-> **Last updated:** 2026-04-08
+> **Last updated:** 2026-04-16
 > **Scope:** FitTrack PWA (Next.js 15 App Router + Clerk + Supabase) at `/Users/aarsh/Documents/fittrack`
 > **Goal:** Catch regressions before they reach production with a layered, automatable test strategy.
 
@@ -109,7 +109,8 @@ supabase db reset
 
 **To add:**
 - `workout.spec.ts` — open Workouts tab, complete an exercise set, verify persistence via reload
-- `nutrition.spec.ts` — search food via Open Food Facts, add meal, assert calorie bank updates
+- `nutrition.spec.ts` — search food via `/api/food/search` (local + OFF fallback), toggle serving units, add meal, assert calorie bank updates
+- `coach.spec.ts` — simulate `missed_workout` trigger (gym day, no sets, after 9pm), verify CoachCard appears, send a message, verify streaming response, verify turn counter decrements
 - `weight.spec.ts` — add weight entry in Progress, verify chart renders
 - `photo.spec.ts` — upload a fixture image, assert signed URL image renders
 - `onboarding.spec.ts` — second Clerk user with no `ft_settings`, walk the wizard end-to-end

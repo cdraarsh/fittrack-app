@@ -44,10 +44,10 @@ export function getWeekNum(settings: Settings | null): number {
 
 export function getPhaseInfo(weekNum: number, totalWeeks: number) {
   const pct = (weekNum - 1) / totalWeeks;
-  if (pct < 0.25) return { phase: 'Foundation Phase', icon: '🏗️', weeks: `1–${Math.round(totalWeeks * 0.25)}`,   desc: 'Prioritise form over load. Film your squat and deadlift every session.' };
-  if (pct < 0.50) return { phase: 'Build Phase',       icon: '📈', weeks: `${Math.round(totalWeeks * 0.25) + 1}–${Math.round(totalWeeks * 0.5)}`,  desc: 'Start progressive overload. Add 2.5 kg when you hit the top of your rep range.' };
-  if (pct < 0.75) return { phase: 'Strength Phase',    icon: '💪', weeks: `${Math.round(totalWeeks * 0.5) + 1}–${Math.round(totalWeeks * 0.75)}`, desc: 'Push RPE 8–9 on compounds. Track your PRs — this is where numbers should peak.' };
-  return           { phase: 'Peak Phase',              icon: '🏆', weeks: `${Math.round(totalWeeks * 0.75) + 1}–${totalWeeks}`,                   desc: 'Peak intensity. Push hard and let your body peak.' };
+  if (pct < 0.25) return { phase: 'Foundation Phase', icon: 'foundation', weeks: `1–${Math.round(totalWeeks * 0.25)}`,   desc: 'Prioritise form over load. Film your squat and deadlift every session.' };
+  if (pct < 0.50) return { phase: 'Build Phase',       icon: 'build',       weeks: `${Math.round(totalWeeks * 0.25) + 1}–${Math.round(totalWeeks * 0.5)}`,  desc: 'Start progressive overload. Add 2.5 kg when you hit the top of your rep range.' };
+  if (pct < 0.75) return { phase: 'Strength Phase',    icon: 'strength',    weeks: `${Math.round(totalWeeks * 0.5) + 1}–${Math.round(totalWeeks * 0.75)}`, desc: 'Push RPE 8–9 on compounds. Track your PRs — this is where numbers should peak.' };
+  return           { phase: 'Peak Phase',              icon: 'peak',        weeks: `${Math.round(totalWeeks * 0.75) + 1}–${totalWeeks}`,                   desc: 'Peak intensity. Push hard and let your body peak.' };
 }
 
 export function getDayDateInWeek(workoutKey: string, settings: Settings | null): Date {

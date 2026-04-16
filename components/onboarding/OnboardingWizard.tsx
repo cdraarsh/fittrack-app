@@ -6,7 +6,7 @@ import { DAYS, DEFAULT_GYM_DAYS } from '@/lib/constants';
 import { computeTargetsFromTDEE, dk } from '@/lib/utils';
 import { toast } from '../shared/Toast';
 import { generateAIPlan } from '@/lib/aiPlan';
-import type { UserProfile, OnboardingProfile } from '@/lib/types';
+import type { UserProfile, OnboardingProfile, AIPlan } from '@/lib/types';
 
 type Mode = 'auto' | 'manual';
 type Goal = UserProfile['goal'];
@@ -47,6 +47,7 @@ export default function OnboardingWizard() {
 
   // Step 6 — AI generation state
   const [aiError, setAiError] = useState('');
+  const [aiPartial, setAiPartial] = useState<Partial<AIPlan> | null>(null);
 
   // Step 4 calorie override (manual mode)
   const [mode,     setMode]     = useState<Mode>('auto');
@@ -95,6 +96,7 @@ export default function OnboardingWizard() {
 
   async function runAIGeneration() {
     setAiError('');
+    setAiPartial(null);
     try {
       const profile: OnboardingProfile = {
         name,
@@ -114,7 +116,7 @@ export default function OnboardingWizard() {
         program_weeks: programWeeks,
       };
 
-      const aiPlan = await generateAIPlan(profile);
+      const aiPlan = await generateAIPlan(profile, setAiPartial);
 
       // Use AI-generated targets (override TDEE estimate)
       const finalGym  = aiPlan.daily_targets.gym_day_calories;
@@ -421,15 +423,45 @@ export default function OnboardingWizard() {
           <>
             {!aiError ? (
               <>
-                <div className="flex flex-col items-center py-8 text-center">
+                <div className="flex flex-col items-center py-6 text-center">
                   <div className="w-14 h-14 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center mb-5">
                     <Spinner />
                   </div>
                   <div className="font-condensed text-2xl font-black mb-2">Building Your Plan</div>
-                  <div className="text-sm text-text3 mb-1">Claude is analysing your profile...</div>
-                  <div className="text-[11px] text-text3/60 leading-relaxed max-w-[260px] mt-3">
-                    Calculating TDEE · Setting macros · Personalising nutrition for your {goal.replace('_', ' ')} goal
-                  </div>
+                  <div className="text-sm text-text3 mb-4">Claude is analysing your profile...</div>
+
+                  {(() => {
+                    const steps: Array<{ key: keyof AIPlan; label: string }> = [
+                      { key: 'daily_targets', label: 'Calorie & macro targets' },
+                      { key: 'cardio_recommendation', label: 'Cardio prescription' },
+                      { key: 'nutrition_principles', label: 'Nutrition principles' },
+                      { key: 'workout_plan', label: 'Workout plan' },
+                      { key: 'phase_targets', label: 'Progression phases' },
+                    ];
+                    return (
+                      <div className="w-full max-w-[280px] flex flex-col gap-1.5 text-left">
+                        {steps.map(({ key, label }) => {
+                          const done = Boolean(aiPartial?.[key]);
+                          return (
+                            <div key={key} className="flex items-center gap-2 text-[11px]">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black ${
+                                done ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-bg3 text-text3/40 border border-border'
+                              }`}>
+                                {done ? '✓' : '·'}
+                              </span>
+                              <span className={done ? 'text-text' : 'text-text3/60'}>{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {aiPartial?.daily_targets?.gym_day_calories ? (
+                    <div className="text-[11px] text-text3 mt-4">
+                      TDEE ~{aiPartial.tdee_estimate ?? '—'} kcal · Gym day {aiPartial.daily_targets.gym_day_calories} kcal
+                    </div>
+                  ) : null}
                 </div>
               </>
             ) : (

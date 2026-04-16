@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateText, Output } from 'ai';
+import { NextRequest } from 'next/server';
+import { streamObject } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { PLAN_SYSTEM_PROMPT, buildPlanUserPrompt } from '@/lib/aiPlan';
 import type { OnboardingProfile } from '@/lib/types';
+
+export const maxDuration = 300;
 
 const AIPlanSchema = z.object({
   daily_targets: z.object({
@@ -60,37 +62,47 @@ export async function POST(req: NextRequest) {
     const { profile } = await req.json() as { profile: OnboardingProfile };
 
     if (!profile?.weight_kg || !profile?.height_cm || !profile?.age) {
-      return NextResponse.json({ error: 'Incomplete profile' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Incomplete profile' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const userPrompt = buildPlanUserPrompt(profile);
 
-    console.log('[generate-plan] request', JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      system: PLAN_SYSTEM_PROMPT,
-      prompt: userPrompt,
-    }));
+    console.log('[generate-plan] request', { model: 'claude-sonnet-4-6', promptLen: userPrompt.length });
 
-    const { output: plan, usage, finishReason } = await generateText({
+    const result = streamObject({
       model: anthropic('claude-sonnet-4-6'),
-      output: Output.object({ schema: AIPlanSchema }),
-      system: PLAN_SYSTEM_PROMPT,
-      prompt: userPrompt,
+      schema: AIPlanSchema,
+      messages: [
+        {
+          role: 'system',
+          content: PLAN_SYSTEM_PROMPT,
+          providerOptions: {
+            anthropic: { cacheControl: { type: 'ephemeral' } },
+          },
+        },
+        { role: 'user', content: userPrompt },
+      ],
+      onError({ error }) {
+        console.error('[generate-plan] stream error:', error);
+      },
+      onFinish({ usage, object }) {
+        console.log('[generate-plan] finish', JSON.stringify({
+          usage,
+          object,
+        }, null, 2));
+      },
     });
 
-    console.log('[generate-plan] response', JSON.stringify({
-      finishReason,
-      usage,
-      plan,
-    }));
-
-    return NextResponse.json({ plan });
+    return result.toTextStreamResponse();
   } catch (err) {
-    console.error('generate-plan error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 }
+    console.error('[generate-plan] error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    return new Response(
+      JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

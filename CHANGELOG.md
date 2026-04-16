@@ -1,5 +1,26 @@
 # FitTrack Changelog
 
+## v1.7.0 — 2026-04-16
+
+### Added
+- **AI Coach** — context-aware coaching card on the Today tab. Appears automatically on four triggers: missed workout (gym day, no sets logged, past 9pm), end-of-week check-in (Sunday), phase transition (first day of new training phase), and calorie streak broken (3+ days logged, nothing today, past 7pm). Up to 3 turns per session. Streams responses from Claude with prompt caching on the system prompt.
+- **Food Search API** (`/api/food/search`) — server-side food search backed by a Supabase `ft_foods` table. Hits local DB first (seeded Indian staples + cached results), falls back to Open Food Facts with a 4s timeout. Results cached in Supabase automatically.
+- **Serving size support** in FoodSearch — toggle between grams and unit-based entry (e.g. "1 roti", "2 eggs") when a food has a serving unit defined.
+- **Supabase food migrations** — `ft_foods` table with 50+ Indian staple entries, serving size columns, and index on `name`.
+
+### Changed
+- **Tab bar** — icons added to all tabs (Zap, Dumbbell, Apple, TrendingUp) with label below; touch target increased to 48px.
+- **Phase icons** — replaced emoji with Lucide SVG icons (Layers, TrendingUp, Flame, Trophy) for consistent rendering across platforms.
+- **Exercise set buttons** — replaced emoji checkmarks with Lucide `Check`/`Circle` icons; swap button uses `ArrowLeftRight` instead of `⇄`.
+- **Plan generation** — migrated from `generateText` to `streamObject` for streaming structured output with prompt caching on the system prompt.
+
+### Fixed
+- Phase transition coach card no longer fires all 7 days of the transition week — restricted to the first day of the program week only.
+- TextDecoder final flush added to coach streaming loop — prevents dropped non-ASCII characters at stream end.
+- User PII removed from `generate-plan` server logs.
+
+---
+
 ## v1.6.2 — 2026-04-07
 
 ### Delete Account Data

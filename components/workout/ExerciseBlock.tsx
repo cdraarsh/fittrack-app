@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, ArrowLeftRight, Check, Circle, Trophy } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { computePRs, dk } from '@/lib/utils';
 import { startRestTimer } from '../shared/RestTimer';
@@ -63,7 +63,7 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
           {swappedName && <span className="text-[11px] text-text3 font-normal ml-1">(swapped)</span>}
         </div>
         {SWAP_MAP_HAS(ex.id) && isToday && (
-          <button onClick={() => setSwapOpen(true)} className="text-text3 hover:text-accent text-lg leading-none ml-2 flex-shrink-0">⇄</button>
+          <button onClick={() => setSwapOpen(true)} className="text-text3 hover:text-accent ml-2 flex-shrink-0 cursor-pointer"><ArrowLeftRight size={15} /></button>
         )}
       </div>
       <div className="text-[11px] text-text3 font-semibold tracking-wide mb-2.5">
@@ -110,13 +110,13 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
               <button
                 disabled={!isToday}
                 onClick={() => toggleSet(i)}
-                className={`flex items-center justify-center rounded-lg py-2 w-full border transition-all disabled:opacity-30 ${
+                className={`flex items-center justify-center rounded-lg py-2 w-full border transition-all disabled:opacity-30 cursor-pointer active:scale-95 ${
                   s.done
                     ? 'bg-accent/10 border-accent/35 text-accent'
                     : 'bg-bg3 border-border text-text3'
                 }`}
               >
-                {s.done ? '✓' : '○'}
+                {s.done ? <Check size={14} strokeWidth={2.5} /> : <Circle size={14} />}
               </button>
             </React.Fragment>
           );
@@ -126,7 +126,7 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
       {/* Overload hint */}
       {allMax && isToday && (
         <div className="flex items-center gap-2 mt-2.5 bg-accent/5 border border-accent/18 rounded-lg px-3 py-2 text-xs text-accent font-semibold">
-          🏆 All sets hit top of range — add 2.5 kg next session!
+          <Trophy size={13} className="flex-shrink-0" /> All sets hit top of range — add 2.5 kg next session!
         </div>
       )}
 
