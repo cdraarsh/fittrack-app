@@ -1,6 +1,6 @@
 {
   "name": "fittrack",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -28,6 +28,7 @@
     "react": "^19.0.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.0.0",
+    "require-in-the-middle": "^8.0.1",
     "tailwind-merge": "^2.5.0",
     "web-push": "^3.6.7"
   },

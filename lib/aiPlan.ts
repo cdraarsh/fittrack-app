@@ -1,3 +1,4 @@
+import { parsePartialJson } from 'ai';
 import type { AIPlan, OnboardingProfile } from './types';
 export type { AIPlan, OnboardingProfile };
 
@@ -14,10 +15,12 @@ When given a user profile, you will:
 6. Prioritise habits that have the highest impact for a beginner or intermediate lifter
 
 Rules:
-- Weight loss: target 0.4–0.7 kg/week. Never below 1200 kcal for women or 1500 kcal for men.
+- TDEE math (deterministic): compute BMR via Mifflin-St Jeor, then multiply by these EXACT activity scalars — Sedentary=1.2, Lightly active=1.375, Moderately active=1.55, Very active=1.725. Do not use other multipliers.
+- Before producing the final JSON, silently compute step-by-step: BMR, activity scalar, TDEE, goal-adjusted calories, protein g, fat g, carbs g. The final numbers in daily_targets must be internally consistent with these steps. Do not output the intermediate steps.
+- Weight loss: target 0.4–0.7 kg/week. Never below 1200 kcal for women or 1500 kcal for men. NEVER prescribe a deficit greater than 1000 kcal below TDEE, regardless of how aggressive the user's timeline is — if their target weight implies a larger deficit, extend the timeline in program_notes instead.
 - Muscle gain: target 0.15–0.3 kg/week. Calorie surplus of 150–250 kcal above TDEE.
 - Recomp: calories at TDEE ±100 kcal (neither surplus nor significant deficit). Protein at the upper end (2.2 g/kg). Fat loss and muscle gain happen simultaneously — do not set a weight change target.
-- Protein: 1.8–2.2 g/kg of CURRENT bodyweight. Round to nearest 5g.
+- Protein: 1.8–2.2 g/kg of CURRENT bodyweight. Round to nearest 5g. EXCEPTION: if BMI > 30, calculate protein from TARGET bodyweight instead of current bodyweight — prevents prescribing absurd protein quantities to obese users.
 - Fat: minimum 0.8 g/kg bodyweight, rounded to nearest 5g. Cap at 35% of calories.
 - Carbs: remainder after protein + fat calories. Round to nearest 5g.
 - Gym day vs rest day: reduce rest day carbs by 30–40%, not protein or fat.
@@ -132,7 +135,10 @@ Build a precise, personalised plan for this person. Be specific — generic outp
 
 // ─── Client-side call to our API route ───────────────────────────────────────
 
-export async function generateAIPlan(profile: OnboardingProfile): Promise<AIPlan> {
+export async function generateAIPlan(
+  profile: OnboardingProfile,
+  onPartial?: (partial: Partial<AIPlan>) => void,
+): Promise<AIPlan> {
   const res = await fetch('/api/generate-plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -144,6 +150,33 @@ export async function generateAIPlan(profile: OnboardingProfile): Promise<AIPlan
     throw new Error((err as { error?: string }).error ?? `Plan generation failed (${res.status})`);
   }
 
-  const { plan } = await res.json() as { plan: AIPlan };
-  return plan;
+  if (!res.body) throw new Error('No response body');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let lastEmitted: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    if (onPartial) {
+      const parsed = await parsePartialJson(buffer);
+      if (parsed.value) {
+        const key = JSON.stringify(parsed.value);
+        if (key !== lastEmitted) {
+          lastEmitted = key;
+          onPartial(parsed.value as unknown as Partial<AIPlan>);
+        }
+      }
+    }
+  }
+
+  const final = await parsePartialJson(buffer);
+  if (!final.value || final.state === 'failed-parse') {
+    throw new Error('Failed to parse plan from stream');
+  }
+  return final.value as unknown as AIPlan;
 }
