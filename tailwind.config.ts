@@ -25,11 +25,22 @@ const config: Config = {
         warn:    '#f59e0b',
         info:    '#60a5fa',
         purple:  '#a78bfa',
+        // — design-system-v1.0 tokens (paper + clay editorial) —
+        paper:   '#F5F1E8',
+        surface: '#FFFDF7',
+        'surface-2': '#EFEADC',
+        ink: { DEFAULT: '#121110', 2: '#4A453C', 3: '#8F877A' },
+        hairline: { DEFAULT: '#E0D8C6', 2: '#C9BFA7' },
+        clay: { DEFAULT: '#B84B3A', hover: '#9C3D2E', wash: '#F7E6E0', dim: '#D69F94' },
+        sage:    '#5A7A3C',
+        mustard: '#C68B1E',
       },
       fontFamily: {
         sans:      ['var(--font-barlow)', 'system-ui', 'sans-serif'],
         condensed: ['var(--font-barlow-condensed)', 'system-ui', 'sans-serif'],
+        mono:      ['var(--font-jetbrains-mono)', 'ui-monospace', 'SF Mono', 'monospace'],
       },
+      fontVariantNumeric: { tabular: 'tabular-nums' },
       borderRadius: {
         card: '14px',
         sm:   '10px',

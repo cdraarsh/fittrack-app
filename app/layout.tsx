@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
-import { Barlow, Barlow_Condensed } from 'next/font/google';
+import { Barlow, Barlow_Condensed, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 // Self-hosted via next/font — zero CLS, no external request at runtime
@@ -15,6 +15,13 @@ const barlowCondensed = Barlow_Condensed({
   subsets: ['latin'],
   weight: ['500', '600', '700', '800'],
   variable: '--font-barlow-cond',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jetbrains-mono-raw',
   display: 'swap',
 });
 
@@ -53,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         },
       }}
     >
-      <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable}`}>
+      <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable} ${jetbrainsMono.variable}`}>
         <body className="bg-bg min-h-screen font-sans">{children}</body>
       </html>
     </ClerkProvider>
