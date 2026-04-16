@@ -16,6 +16,8 @@ const config: Config = {
         border:  '#232b38',
         accent:  '#22c55e',
         'accent-dim': 'rgba(34,197,94,0.12)',
+        energy:  '#f97316',
+        'energy-dim': 'rgba(249,115,22,0.12)',
         text1:   '#f1f5f9',
         text2:   '#94a3b8',
         text3:   '#64748b',

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { UserButton } from '@clerk/nextjs';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Zap, Dumbbell, Apple, TrendingUp } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { getWeekNum, todayIsGymDay, getProgramWeeks } from '@/lib/utils';
 import { DAYS } from '@/lib/constants';
@@ -15,12 +15,12 @@ import SettingsTab   from './tabs/SettingsTab';
 import RestTimer     from './shared/RestTimer';
 import type { TabName } from '@/lib/types';
 
-const TABS: { id: TabName; label: string; icon?: React.ReactNode }[] = [
-  { id: 'today',     label: 'Today'     },
-  { id: 'workouts',  label: 'Workouts'  },
-  { id: 'nutrition', label: 'Nutrition' },
-  { id: 'progress',  label: 'Progress'  },
-  { id: 'settings',  label: '', icon: <Settings2 size={16} /> },
+const TABS: { id: TabName; label: string; icon: React.ReactNode }[] = [
+  { id: 'today',     label: 'Today',    icon: <Zap size={16} /> },
+  { id: 'workouts',  label: 'Train',    icon: <Dumbbell size={16} /> },
+  { id: 'nutrition', label: 'Eat',      icon: <Apple size={16} /> },
+  { id: 'progress',  label: 'Stats',    icon: <TrendingUp size={16} /> },
+  { id: 'settings',  label: '',         icon: <Settings2 size={16} /> },
 ];
 
 export default function AppShell() {
@@ -85,7 +85,7 @@ export default function AppShell() {
           <button
             key={t.id}
             onClick={() => setCurrentTab(t.id)}
-            className={`flex-1 min-h-[44px] text-[13px] font-semibold py-2 px-1 rounded-lg transition-colors duration-150 cursor-pointer flex items-center justify-center ${
+            className={`flex-1 min-h-[48px] py-1.5 px-1 rounded-lg transition-colors duration-150 cursor-pointer flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
               t.id === 'settings' ? 'flex-none px-3' : ''
             } ${
               currentTab === t.id
@@ -93,7 +93,8 @@ export default function AppShell() {
                 : 'text-text3 hover:text-text2 hover:bg-bg2'
             }`}
           >
-            {t.icon ?? t.label}
+            {t.icon}
+            {t.label && <span className="text-[10px] font-semibold">{t.label}</span>}
           </button>
         ))}
       </nav>
