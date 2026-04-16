@@ -199,18 +199,18 @@ export default function TodayTab() {
         const doneSets = Object.values(data.wo ?? {}).reduce((s, e) => s + (e?.sets?.filter(x => x?.done)?.length ?? 0), 0);
         const p = totSets > 0 ? Math.round(doneSets / totSets * 100) : 0;
         return (
-          <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+          <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-[13px] font-black uppercase tracking-widest text-text2">{wo.name}</div>
-                <div className="text-xs text-text3 mt-0.5">{doneSets} / {totSets} sets logged</div>
+                <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink">{wo.name}</div>
+                <div className="text-xs text-ink-3 mt-0.5"><span className="font-mono tabular-nums">{doneSets}</span> / <span className="font-mono tabular-nums">{totSets}</span> sets logged</div>
               </div>
-              <div className={`font-condensed text-3xl font-black ${p === 100 ? 'text-accent' : p > 0 ? 'text-energy' : 'text-text2'}`}>{p}%</div>
+              <div className={`font-mono tabular-nums text-3xl font-semibold ${p === 100 ? 'text-sage' : p > 0 ? 'text-clay' : 'text-ink-3'}`}>{p}%</div>
             </div>
-            <div className="h-2.5 bg-bg3 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-energy to-accent rounded-full transition-all duration-300" style={{ width: `${p}%` }} />
+            <div className="h-2.5 bg-surface-2 rounded-full overflow-hidden">
+              <div className={`h-full ${p === 100 ? 'bg-sage' : 'bg-clay'} rounded-full transition-all duration-300`} style={{ width: `${p}%` }} />
             </div>
-            <button onClick={() => setCurrentTab('workouts')} className="mt-3 w-full py-3 bg-gradient-to-r from-energy to-accent text-black font-bold rounded-[10px] text-sm cursor-pointer active:scale-[0.97] transition-transform">
+            <button onClick={() => setCurrentTab('workouts')} className="mt-3 w-full py-3 bg-clay hover:bg-clay-hover text-surface font-sans font-bold rounded-sm text-sm cursor-pointer active:scale-[0.97] transition-transform">
               Open Workout Log →
             </button>
           </div>
