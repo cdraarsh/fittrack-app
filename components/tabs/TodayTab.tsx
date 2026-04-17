@@ -218,24 +218,27 @@ export default function TodayTab() {
       })()}
 
       {/* Daily checklist */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Daily Checklist</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink mb-3">Daily Checklist</div>
         {/* Water */}
-        <div className="flex items-center justify-between py-2.5 border-b border-border">
+        <div className="flex items-center justify-between py-2.5 border-b border-hairline">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-info/10 border border-info/20 rounded-[10px] flex items-center justify-center text-info">
+            <div className="w-9 h-9 bg-surface-2 border border-hairline rounded-sm flex items-center justify-center text-ink-2">
               <Droplets size={18} />
             </div>
             <div>
-              <div className="text-sm">Water</div>
-              <div className="text-[11px] text-text3">{water}/7 glasses (3.5 L)</div>
+              <div className="text-sm text-ink">Water</div>
+              <div className="text-[11px] text-ink-3">
+                <span className="font-mono tabular-nums">{water}</span>/
+                <span className="font-mono tabular-nums">7</span> glasses (<span className="font-mono tabular-nums">3.5</span> L)
+              </div>
             </div>
           </div>
           <div className="flex gap-1.5 flex-wrap justify-end max-w-[200px]">
             {[1,2,3,4,5,6,7].map(i => (
               <button key={i} onClick={() => setWater(i)}
-                className={`min-w-[36px] min-h-[36px] rounded-lg border flex items-center justify-center transition-colors duration-150 cursor-pointer active:scale-90 ${
-                  water >= i ? 'bg-info/15 border-info/40 text-info' : 'bg-bg3 border-border text-text3/40'
+                className={`min-w-[36px] min-h-[36px] rounded-sm border flex items-center justify-center transition-colors duration-150 cursor-pointer active:scale-90 ${
+                  water >= i ? 'bg-clay-wash border-clay-dim text-clay' : 'bg-surface-2 border-hairline text-ink-3'
                 }`}>
                 <Droplets size={14} />
               </button>
@@ -243,27 +246,27 @@ export default function TodayTab() {
           </div>
         </div>
         {/* Sleep */}
-        <div className="flex items-center justify-between py-2.5 border-b border-border">
+        <div className="flex items-center justify-between py-2.5 border-b border-hairline">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple/10 border border-purple/20 rounded-[10px] flex items-center justify-center text-purple">
+            <div className="w-9 h-9 bg-surface-2 border border-hairline rounded-sm flex items-center justify-center text-ink-2">
               <Moon size={18} />
             </div>
-            <span className="text-sm">Sleep 7+ hours</span>
+            <span className="text-sm text-ink">Sleep 7+ hours</span>
           </div>
-          <button onClick={() => toggle('sleep')} className={`w-12 h-7 rounded-full border relative transition-colors duration-150 cursor-pointer ${data.check?.sleep ? 'bg-accent/18 border-accent' : 'bg-bg3 border-border'}`}>
-            <span className={`absolute w-5 h-5 rounded-full top-0.5 transition-transform duration-150 ${data.check?.sleep ? 'translate-x-5 bg-accent' : 'translate-x-0.5 bg-text3'}`} />
+          <button onClick={() => toggle('sleep')} className={`w-12 h-7 rounded-full border relative transition-colors duration-150 cursor-pointer ${data.check?.sleep ? 'bg-clay border-clay' : 'bg-surface-2 border-hairline'}`}>
+            <span className={`absolute w-5 h-5 rounded-full top-0.5 transition-transform duration-150 ${data.check?.sleep ? 'translate-x-5 bg-paper' : 'translate-x-0.5 bg-ink-3'}`} />
           </button>
         </div>
         {/* No sugar */}
         <div className="flex items-center justify-between py-2.5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-danger/10 border border-danger/20 rounded-[10px] flex items-center justify-center text-danger">
+            <div className="w-9 h-9 bg-surface-2 border border-hairline rounded-sm flex items-center justify-center text-ink-2">
               <XCircle size={18} />
             </div>
-            <span className="text-sm">No added sugar</span>
+            <span className="text-sm text-ink">No added sugar</span>
           </div>
-          <button onClick={() => toggle('noSugar')} className={`w-12 h-7 rounded-full border relative transition-colors duration-150 cursor-pointer ${data.check?.noSugar ? 'bg-accent/18 border-accent' : 'bg-bg3 border-border'}`}>
-            <span className={`absolute w-5 h-5 rounded-full top-0.5 transition-transform duration-150 ${data.check?.noSugar ? 'translate-x-5 bg-accent' : 'translate-x-0.5 bg-text3'}`} />
+          <button onClick={() => toggle('noSugar')} className={`w-12 h-7 rounded-full border relative transition-colors duration-150 cursor-pointer ${data.check?.noSugar ? 'bg-clay border-clay' : 'bg-surface-2 border-hairline'}`}>
+            <span className={`absolute w-5 h-5 rounded-full top-0.5 transition-transform duration-150 ${data.check?.noSugar ? 'translate-x-5 bg-paper' : 'translate-x-0.5 bg-ink-3'}`} />
           </button>
         </div>
       </div>
