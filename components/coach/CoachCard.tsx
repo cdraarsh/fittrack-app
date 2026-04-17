@@ -83,34 +83,34 @@ export default function CoachCard({ trigger, context }: Props) {
   }
 
   return (
-    <div className="mb-3 bg-bg2 border border-accent/20 rounded-card overflow-hidden">
+    <div className="mb-3 bg-surface border border-hairline rounded-card overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-accent/5">
-        <MessageCircle size={14} className="text-accent flex-shrink-0" />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-accent">Coach</span>
-        <span className="ml-auto text-[10px] text-text3">{MAX_TURNS - turnCount} reply{MAX_TURNS - turnCount !== 1 ? 's' : ''} left</span>
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-hairline bg-clay-wash">
+        <MessageCircle size={14} className="text-clay flex-shrink-0" />
+        <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-clay">Coach</span>
+        <span className="ml-auto font-mono text-[10px] text-ink-3"><span className="tabular-nums">{MAX_TURNS - turnCount}</span> reply{MAX_TURNS - turnCount !== 1 ? 's' : ''} left</span>
       </div>
 
       {/* Messages */}
       <div className="px-4 py-3 space-y-2.5">
         {messages.map((m, i) => (
-          <div key={i} className={`text-sm leading-relaxed ${m.role === 'coach' ? 'text-text1' : 'text-text2 text-right'}`}>
+          <div key={i} className={`text-sm leading-relaxed ${m.role === 'coach' ? 'text-ink' : 'text-ink-2 text-right'}`}>
             {m.role === 'coach' && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-accent mr-1.5">Coach</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-clay mr-1.5">Coach</span>
             )}
             {m.text || (loading && i === messages.length - 1
-              ? <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin align-middle" />
+              ? <span className="inline-block w-4 h-4 border-2 border-clay/30 border-t-clay rounded-full animate-spin align-middle" />
               : null
             )}
           </div>
         ))}
 
         {error && (
-          <div className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</div>
+          <div className="text-xs text-clay bg-clay-wash rounded-lg px-3 py-2">{error}</div>
         )}
 
         {done && (
-          <div className="text-xs text-text3 text-center pt-1">
+          <div className="text-xs text-ink-3 text-center pt-1">
             For more, come back tomorrow.
           </div>
         )}
@@ -127,12 +127,12 @@ export default function CoachCard({ trigger, context }: Props) {
             onKeyDown={handleKey}
             disabled={loading}
             placeholder="Reply…"
-            className="flex-1 bg-bg3 border border-border rounded-xl text-sm px-3 py-2 outline-none focus:border-accent text-text1 placeholder:text-text3 disabled:opacity-50"
+            className="flex-1 bg-surface-2 border border-hairline rounded-sm text-sm px-3 py-2 outline-none focus:border-clay text-ink placeholder:text-ink-3 disabled:opacity-50"
           />
           <button
             onClick={send}
             disabled={!input.trim() || loading}
-            className="p-2 rounded-xl bg-gradient-to-r from-energy to-accent text-black disabled:opacity-40 cursor-pointer active:scale-95 transition-transform flex-shrink-0"
+            className="p-2 rounded-sm bg-clay hover:bg-clay-hover text-surface disabled:opacity-40 cursor-pointer active:scale-95 transition-transform flex-shrink-0"
           >
             <Send size={14} />
           </button>

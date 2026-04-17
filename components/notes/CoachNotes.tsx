@@ -30,13 +30,13 @@ export default function CoachNotes() {
   }
 
   return (
-    <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+    <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <div className="text-[13px] font-black uppercase tracking-widest text-text2">Coach Notes</div>
-          <div className="text-[11px] text-text3 mt-0.5">Week {weekNum} — guidance for yourself</div>
+          <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink">Coach Notes</div>
+          <div className="text-[11px] text-ink-3 mt-0.5">Week <span className="font-mono tabular-nums">{weekNum}</span> — guidance for yourself</div>
         </div>
-        {saved && <span className="text-[11px] font-bold text-accent">Saved ✓</span>}
+        {saved && <span className="font-mono text-[11px] font-bold text-sage">Saved ✓</span>}
       </div>
 
       {/* Prompt pills */}
@@ -45,7 +45,7 @@ export default function CoachNotes() {
           <button
             key={p}
             onClick={() => save(text ? `${text}\n• ${p}` : `• ${p}`)}
-            className="text-[10px] px-2 py-1 rounded-full bg-bg3 border border-border text-text3 hover:border-accent/40 hover:text-accent transition-colors"
+            className="text-[10px] px-2 py-1 rounded-full bg-surface-2 border border-hairline text-ink-3 hover:border-clay-dim hover:text-clay transition-colors"
           >
             {p}
           </button>
@@ -58,7 +58,7 @@ export default function CoachNotes() {
         onBlur={e => save(e.target.value)}
         placeholder="Write your coaching notes for this week…"
         rows={4}
-        className="w-full bg-bg2 border border-border rounded-[10px] text-sm text-text1 p-3 resize-none outline-none focus:border-accent leading-relaxed"
+        className="w-full bg-surface-2 border border-hairline rounded-sm text-sm text-ink p-3 resize-none outline-none focus:border-clay leading-relaxed"
       />
     </div>
   );
