@@ -53,20 +53,20 @@ export default function RestTimer() {
   const isDone = remaining === 0;
 
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-bg2 border border-accent/25 rounded-xl px-4 py-2.5 shadow-lg min-w-[180px]">
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-surface-2 border border-clay-dim rounded-sm px-4 py-2.5 shadow-lg min-w-[180px]">
       <div>
-        <div className="text-[11px] text-text3 font-semibold">Rest</div>
-        <div className={`font-condensed text-2xl font-black ${isDone ? 'text-accent' : isLow ? 'text-danger' : 'text-accent'}`}>
+        <div className="text-[11px] text-ink-3 font-semibold">Rest</div>
+        <div className={`font-sans text-2xl font-black ${isDone ? 'text-clay' : isLow ? 'text-clay' : 'text-clay'}`}>
           {isDone ? 'Go!' : `${remaining}s`}
         </div>
       </div>
-      <div className="flex-1 h-1.5 bg-bg3 rounded-full overflow-hidden min-w-[60px]">
+      <div className="flex-1 h-1.5 bg-surface-2 rounded-full overflow-hidden min-w-[60px]">
         <div
-          className={`h-full rounded-full transition-all duration-1000 ${isLow ? 'bg-danger' : 'bg-accent'}`}
+          className={`h-full rounded-full transition-all duration-1000 ${isLow ? 'bg-clay' : 'bg-clay'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <button onClick={dismiss} className="text-text3 hover:text-text2 text-lg leading-none">✕</button>
+      <button onClick={dismiss} className="text-ink-3 hover:text-ink-2 text-lg leading-none">✕</button>
     </div>
   );
 }

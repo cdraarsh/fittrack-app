@@ -115,38 +115,38 @@ export default function SettingsTab() {
   return (
     <div>
       {/* Profile */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-4">Profile</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-4">Profile</div>
         <div className="mb-3">
-          <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">Name</div>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 outline-none focus:border-accent text-text1" />
+          <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">Name</div>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 outline-none focus:border-clay text-ink" />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">Bodyweight (kg)</div>
-            <input type="number" inputMode="decimal" step="0.1" value={weight} onChange={e => setWeight(+e.target.value)} className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 outline-none focus:border-accent text-text1" />
+            <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">Bodyweight (kg)</div>
+            <input type="number" inputMode="decimal" step="0.1" value={weight} onChange={e => setWeight(+e.target.value)} className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 outline-none focus:border-clay text-ink" />
           </div>
           <div>
-            <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">Height (cm)</div>
-            <input type="number" inputMode="numeric" value={height} onChange={e => setHeight(+e.target.value)} className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 outline-none focus:border-accent text-text1" />
+            <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">Height (cm)</div>
+            <input type="number" inputMode="numeric" value={height} onChange={e => setHeight(+e.target.value)} className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 outline-none focus:border-clay text-ink" />
           </div>
         </div>
       </div>
 
       {/* Program */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-4">Program</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-4">Program</div>
         <div className="mb-4">
-          <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">Start Date</div>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 outline-none focus:border-accent text-text1" />
+          <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">Start Date</div>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 outline-none focus:border-clay text-ink" />
         </div>
         <div className="mb-4">
-          <div className="text-[10px] text-text3 uppercase font-bold mb-2">Program Length</div>
+          <div className="text-[10px] text-ink-3 uppercase font-bold mb-2">Program Length</div>
           <div className="flex gap-1.5">
             {[8, 10, 12, 16, 20].map(w => (
               <button key={w} onClick={() => setProgramWeeks(w)}
                 className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${
-                  programWeeks === w ? 'bg-accent/10 border-accent/35 text-accent' : 'bg-bg3 border-border text-text3'
+                  programWeeks === w ? 'bg-clay-wash border-clay-dim text-clay' : 'bg-surface-2 border-hairline text-ink-3'
                 }`}>
                 {w}w
               </button>
@@ -154,12 +154,12 @@ export default function SettingsTab() {
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-text3 uppercase font-bold mb-2">Gym Days</div>
+          <div className="text-[10px] text-ink-3 uppercase font-bold mb-2">Gym Days</div>
           <div className="grid grid-cols-7 gap-1.5">
             {DAYS.map((day, i) => (
               <button key={day} onClick={() => toggleGymDay(day)}
                 className={`py-2.5 rounded-lg text-[10px] font-bold uppercase transition-all border ${
-                  gymDays.includes(day) ? 'bg-accent/10 border-accent/35 text-accent' : 'bg-bg3 border-border text-text3'
+                  gymDays.includes(day) ? 'bg-clay-wash border-clay-dim text-clay' : 'bg-surface-2 border-hairline text-ink-3'
                 }`}>
                 {dayLabels[i]}
               </button>
@@ -169,10 +169,10 @@ export default function SettingsTab() {
       </div>
 
       {/* Nutrition */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-[13px] font-black uppercase tracking-widest text-text2">Nutrition Targets</div>
-          <button onClick={recalcTDEE} className="text-xs font-bold px-3 py-1.5 bg-bg3 border border-border rounded-lg text-text2">Recalc TDEE</button>
+          <div className="text-[13px] font-black uppercase tracking-widest text-ink-2">Nutrition Targets</div>
+          <button onClick={recalcTDEE} className="text-xs font-bold px-3 py-1.5 bg-surface-2 border border-hairline rounded-lg text-ink-2">Recalc TDEE</button>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {[
@@ -182,52 +182,52 @@ export default function SettingsTab() {
             { label:'Fat (g)',      val:fat,       set:setFat      },
           ].map(({ label, val, set }) => (
             <div key={label}>
-              <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">{label}</div>
-              <input type="number" inputMode="numeric" value={val} onChange={e => set(+e.target.value)} className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 outline-none focus:border-accent text-text1" />
+              <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">{label}</div>
+              <input type="number" inputMode="numeric" value={val} onChange={e => set(+e.target.value)} className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 outline-none focus:border-clay text-ink" />
             </div>
           ))}
         </div>
       </div>
 
-      <button onClick={save} className="w-full py-3.5 bg-gradient-to-r from-accent to-green-400 text-black font-bold rounded-card text-sm mb-3">
+      <button onClick={save} className="w-full py-3.5 bg-clay hover:bg-clay-hover text-surface font-bold rounded-card text-sm mb-3">
         Save Settings
       </button>
 
       {/* Data */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Data</div>
-        <div className="flex items-center justify-between py-2.5 border-b border-border">
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-3">Data</div>
+        <div className="flex items-center justify-between py-2.5 border-b border-hairline">
           <div>
-            <div className="text-sm text-text2">Export my data</div>
-            <div className="text-xs text-text3">Download all logs as JSON</div>
+            <div className="text-sm text-ink-2">Export my data</div>
+            <div className="text-xs text-ink-3">Download all logs as JSON</div>
           </div>
-          <button onClick={exportData} className="text-xs font-bold px-3 py-1.5 bg-bg3 border border-border rounded-lg text-text2">Export</button>
+          <button onClick={exportData} className="text-xs font-bold px-3 py-1.5 bg-surface-2 border border-hairline rounded-lg text-ink-2">Export</button>
         </div>
         <div className="flex items-center justify-between py-2.5">
           <div>
-            <div className="text-sm text-text2">Plan</div>
-            <div className="text-xs text-text3">{s?.plan === 'pro' ? 'Pro — all features unlocked' : 'Free — upgrade coming soon'}</div>
+            <div className="text-sm text-ink-2">Plan</div>
+            <div className="text-xs text-ink-3">{s?.plan === 'pro' ? 'Pro — all features unlocked' : 'Free — upgrade coming soon'}</div>
           </div>
-          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg border ${s?.plan === 'pro' ? 'bg-warn/10 border-warn/30 text-warn' : 'bg-bg3 border-border text-text3'}`}>
+          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg border ${s?.plan === 'pro' ? 'bg-warn/10 border-warn/30 text-mustard' : 'bg-surface-2 border-hairline text-ink-3'}`}>
             {s?.plan?.toUpperCase() ?? 'FREE'}
           </span>
         </div>
       </div>
 
       {/* Notifications */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Notifications</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-3">Notifications</div>
         {notifStatus === 'unsupported' ? (
-          <div className="text-xs text-text3 py-2">Push notifications are not supported in this browser.</div>
+          <div className="text-xs text-ink-3 py-2">Push notifications are not supported in this browser.</div>
         ) : notifStatus === 'denied' ? (
-          <div className="text-xs text-text3 py-2">
+          <div className="text-xs text-ink-3 py-2">
             Notifications are blocked. Enable them in your browser settings, then reload.
           </div>
         ) : (
           <div className="flex items-center justify-between py-1">
             <div>
-              <div className="text-sm text-text2">Workout reminders</div>
-              <div className="text-xs text-text3">
+              <div className="text-sm text-ink-2">Workout reminders</div>
+              <div className="text-xs text-ink-3">
                 {notifStatus === 'granted' ? 'Daily push at 7 AM on gym days' : 'Get reminded on every gym day'}
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function SettingsTab() {
               <button
                 onClick={disableNotifications}
                 disabled={notifLoading}
-                className="text-xs font-bold px-3 py-1.5 bg-bg3 border border-border rounded-lg text-text2 disabled:opacity-50"
+                className="text-xs font-bold px-3 py-1.5 bg-surface-2 border border-hairline rounded-lg text-ink-2 disabled:opacity-50"
               >
                 {notifLoading ? '…' : 'Disable'}
               </button>
@@ -243,7 +243,7 @@ export default function SettingsTab() {
               <button
                 onClick={enableNotifications}
                 disabled={notifLoading}
-                className="text-xs font-bold px-3 py-1.5 bg-accent/10 border border-accent/30 rounded-lg text-accent disabled:opacity-50"
+                className="text-xs font-bold px-3 py-1.5 bg-clay-wash border border-clay-dim rounded-lg text-clay disabled:opacity-50"
               >
                 {notifLoading ? '…' : 'Enable'}
               </button>
@@ -253,14 +253,14 @@ export default function SettingsTab() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-bg1 border border-red-500/20 rounded-card p-4 mb-3">
+      <div className="bg-surface border border-red-500/20 rounded-card p-4 mb-3">
         <div className="text-[13px] font-black uppercase tracking-widest text-red-400 mb-3">Danger Zone</div>
 
         {!showDeleteZone ? (
           <div className="flex items-center justify-between py-1">
             <div>
-              <div className="text-sm text-text2">Delete all my data</div>
-              <div className="text-xs text-text3">Permanently removes all workouts, nutrition, weight logs, and photos</div>
+              <div className="text-sm text-ink-2">Delete all my data</div>
+              <div className="text-xs text-ink-3">Permanently removes all workouts, nutrition, weight logs, and photos</div>
             </div>
             <button
               onClick={() => setShowDeleteZone(true)}
@@ -271,10 +271,10 @@ export default function SettingsTab() {
           </div>
         ) : (
           <div>
-            <div className="text-xs text-text3 mb-3 leading-relaxed">
+            <div className="text-xs text-ink-3 mb-3 leading-relaxed">
               This will permanently delete all your workouts, meals, weight entries, progress photos, and settings. This cannot be undone.
             </div>
-            <div className="text-[10px] text-text3 uppercase font-bold mb-1.5">
+            <div className="text-[10px] text-ink-3 uppercase font-bold mb-1.5">
               Type <span className="text-red-400">DELETE</span> to confirm
             </div>
             <input
@@ -282,12 +282,12 @@ export default function SettingsTab() {
               value={deleteConfirm}
               onChange={e => setDeleteConfirm(e.target.value)}
               placeholder="DELETE"
-              className="w-full bg-bg3 border border-red-500/30 rounded-lg text-sm px-3 py-2.5 outline-none focus:border-red-500 text-text1 mb-3"
+              className="w-full bg-surface-2 border border-red-500/30 rounded-lg text-sm px-3 py-2.5 outline-none focus:border-red-500 text-ink mb-3"
             />
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowDeleteZone(false); setDeleteConfirm(''); }}
-                className="flex-1 py-2.5 bg-bg3 border border-border rounded-lg text-sm font-bold text-text2"
+                className="flex-1 py-2.5 bg-surface-2 border border-hairline rounded-lg text-sm font-bold text-ink-2"
               >
                 Cancel
               </button>
@@ -303,7 +303,7 @@ export default function SettingsTab() {
         )}
       </div>
 
-      <div className="text-center text-[11px] text-text3 pb-4">FitTrack v1.7</div>
+      <div className="text-center text-[11px] text-ink-3 pb-4">FitTrack v1.7</div>
     </div>
   );
 }

@@ -55,32 +55,32 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
   }
 
   return (
-    <div className="bg-bg2 border border-border rounded-[10px] p-3.5 mb-3">
+    <div className="bg-surface-2 border border-hairline rounded-sm p-3.5 mb-3">
       {/* Header */}
       <div className="flex items-start justify-between mb-0.5">
-        <div className="font-condensed text-[17px] font-bold leading-tight">
+        <div className="font-sans text-[17px] font-bold leading-tight">
           {displayName}
-          {swappedName && <span className="text-[11px] text-text3 font-normal ml-1">(swapped)</span>}
+          {swappedName && <span className="text-[11px] text-ink-3 font-normal ml-1">(swapped)</span>}
         </div>
         {SWAP_MAP_HAS(ex.id) && isToday && (
-          <button onClick={() => setSwapOpen(true)} className="text-text3 hover:text-accent ml-2 flex-shrink-0 cursor-pointer"><ArrowLeftRight size={15} /></button>
+          <button onClick={() => setSwapOpen(true)} className="text-ink-3 hover:text-clay ml-2 flex-shrink-0 cursor-pointer"><ArrowLeftRight size={15} /></button>
         )}
       </div>
-      <div className="text-[11px] text-text3 font-semibold tracking-wide mb-2.5">
+      <div className="text-[11px] text-ink-3 font-semibold tracking-wide mb-2.5">
         {ex.sets} × {ex.lo}{ex.lo !== ex.hi ? `–${ex.hi}` : ''}{ex.isTime ? 's' : ' reps'} · Rest {ex.rest}
       </div>
 
       {/* Cue */}
-      <div className="flex items-start gap-2 text-warn bg-warn/5 border border-warn/12 rounded-lg p-2 mb-3 text-xs leading-snug">
+      <div className="flex items-start gap-2 text-mustard bg-warn/5 border border-warn/12 rounded-lg p-2 mb-3 text-xs leading-snug">
         <Lightbulb size={13} className="flex-shrink-0 mt-0.5" />
         <span>{ex.cue}</span>
       </div>
 
       {/* Sets grid */}
       <div className="grid grid-cols-[26px_1fr_1fr_44px] gap-1.5 items-center">
-        <span className="text-[10px] text-text3 font-bold uppercase">#</span>
-        <span className="text-[10px] text-text3 font-bold uppercase">kg</span>
-        <span className="text-[10px] text-text3 font-bold uppercase">{ex.isTime ? 'sec' : 'reps'}</span>
+        <span className="text-[10px] text-ink-3 font-bold uppercase">#</span>
+        <span className="text-[10px] text-ink-3 font-bold uppercase">kg</span>
+        <span className="text-[10px] text-ink-3 font-bold uppercase">{ex.isTime ? 'sec' : 'reps'}</span>
         <span />
         {Array.from({ length: ex.sets }, (_, i) => {
           const s = sets[i] ?? {};
@@ -88,8 +88,8 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
           const isPR = s.done && s.weight && (!existingPR || s.weight > existingPR.weight);
           return (
             <React.Fragment key={i}>
-              <span className="text-xs text-text3 font-semibold text-center">
-                {i + 1}{isPR && <span className="text-warn text-[9px] ml-0.5">★</span>}
+              <span className="text-xs text-ink-3 font-semibold text-center">
+                {i + 1}{isPR && <span className="text-mustard text-[9px] ml-0.5">★</span>}
               </span>
               <input
                 type="number" inputMode="decimal"
@@ -97,7 +97,7 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
                 placeholder="kg"
                 readOnly={!isToday}
                 onChange={e => saveField(i, 'weight', e.target.value)}
-                className="bg-bg3 border border-border rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
+                className="bg-surface-2 border border-hairline rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-clay focus:bg-clay-wash read-only:opacity-40"
               />
               <input
                 type="number" inputMode="numeric"
@@ -105,15 +105,15 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
                 placeholder={`${ex.lo}–${ex.hi}`}
                 readOnly={!isToday}
                 onChange={e => saveField(i, 'reps', e.target.value)}
-                className="bg-bg3 border border-border rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
+                className="bg-surface-2 border border-hairline rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-clay focus:bg-clay-wash read-only:opacity-40"
               />
               <button
                 disabled={!isToday}
                 onClick={() => toggleSet(i)}
                 className={`flex items-center justify-center rounded-lg py-2 w-full border transition-all disabled:opacity-30 cursor-pointer active:scale-95 ${
                   s.done
-                    ? 'bg-accent/10 border-accent/35 text-accent'
-                    : 'bg-bg3 border-border text-text3'
+                    ? 'bg-clay-wash border-clay-dim text-clay'
+                    : 'bg-surface-2 border-hairline text-ink-3'
                 }`}
               >
                 {s.done ? <Check size={14} strokeWidth={2.5} /> : <Circle size={14} />}
@@ -125,7 +125,7 @@ export default function ExerciseBlock({ ex, data, isToday, date, dayName }: Prop
 
       {/* Overload hint */}
       {allMax && isToday && (
-        <div className="flex items-center gap-2 mt-2.5 bg-accent/5 border border-accent/18 rounded-lg px-3 py-2 text-xs text-accent font-semibold">
+        <div className="flex items-center gap-2 mt-2.5 bg-clay-wash border border-clay-dim rounded-lg px-3 py-2 text-xs text-clay font-semibold">
           <Trophy size={13} className="flex-shrink-0" /> All sets hit top of range — add 2.5 kg next session!
         </div>
       )}

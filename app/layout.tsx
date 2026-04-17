@@ -41,7 +41,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#080b10',
+  themeColor: '#F5F1E8',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -49,19 +49,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: '#22c55e',
-          colorBackground: '#0e1117',
-          colorInputBackground: '#1e2532',
-          colorInputText: '#f1f5f9',
-          colorText: '#f1f5f9',
-          colorTextSecondary: '#94a3b8',
-          colorNeutral: '#94a3b8',
+          colorPrimary: '#B84B3A',
+          colorBackground: '#FFFDF7',
+          colorInputBackground: '#EFEADC',
+          colorInputText: '#121110',
+          colorText: '#121110',
+          colorTextSecondary: '#4A453C',
+          colorNeutral: '#8F877A',
           borderRadius: '10px',
         },
       }}
     >
       <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable} ${jetbrainsMono.variable}`}>
-        <body className="bg-bg min-h-screen font-sans">{children}</body>
+        <body className="bg-paper min-h-screen font-sans text-ink">{children}</body>
       </html>
     </ClerkProvider>
   );

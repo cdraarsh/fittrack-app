@@ -10,10 +10,10 @@ export default function CalorieBank() {
   const maxBudget = Math.max(...days.map(d => d.budget));
 
   return (
-    <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+    <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2">Calorie Bank</div>
-        <div className={`font-condensed text-lg font-black ${bankBalance >= 0 ? 'text-accent' : 'text-danger'}`}>
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2">Calorie Bank</div>
+        <div className={`font-sans text-lg font-black ${bankBalance >= 0 ? 'text-clay' : 'text-clay'}`}>
           {bankBalance >= 0 ? '+' : ''}{bankBalance} kcal
         </div>
       </div>
@@ -29,14 +29,14 @@ export default function CalorieBank() {
               <div className="w-full flex flex-col justify-end h-full relative">
                 {/* Budget bar (background) */}
                 <div
-                  className="w-full rounded-sm bg-bg3 border border-border absolute bottom-0"
+                  className="w-full rounded-sm bg-surface-2 border border-hairline absolute bottom-0"
                   style={{ height: `${budgetH}%` }}
                 />
                 {/* Actual bar */}
                 {d.actual > 0 && (
                   <div
                     className={`w-full rounded-sm absolute bottom-0 transition-all ${
-                      over ? 'bg-danger/60' : 'bg-accent/60'
+                      over ? 'bg-clay/50' : 'bg-clay/60'
                     }`}
                     style={{ height: `${actualH}%` }}
                   />
@@ -50,14 +50,14 @@ export default function CalorieBank() {
       {/* Day labels */}
       <div className="flex gap-1.5 mb-3">
         {days.map(d => (
-          <div key={d.date} className="flex-1 text-center text-[10px] text-text3 font-bold">{d.label}</div>
+          <div key={d.date} className="flex-1 text-center text-[10px] text-ink-3 font-bold">{d.label}</div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-text3">
+      <div className="flex items-center justify-between text-[11px] text-ink-3">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-accent/60 inline-block" />Actual</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-bg3 border border-border inline-block" />Budget</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-clay/60 inline-block" />Actual</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-surface-2 border border-hairline inline-block" />Budget</span>
         </div>
         <span>{loggedDays}/7 days logged</span>
       </div>

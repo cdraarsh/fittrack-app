@@ -48,7 +48,7 @@ export default function WorkoutsTab() {
 
   return (
     <div>
-      <p className="text-xs text-text3 mb-4">Enter weight + reps, then tap the checkmark to mark sets done.</p>
+      <p className="text-xs text-ink-3 mb-4">Enter weight + reps, then tap the checkmark to mark sets done.</p>
       {Object.entries(getWorkoutMap(settings)).map(([dayName, wo]) => {
         const dayDate = getDayDateInWeek(dayName, settings);
         const isToday = dk(dayDate) === dk(today);
@@ -58,21 +58,21 @@ export default function WorkoutsTab() {
         const customExs: CustomExercise[] = settings?.customExercises?.[dayName] ?? [];
 
         return (
-          <div key={dayName} className="bg-bg1 border border-border rounded-card mb-3 overflow-hidden">
+          <div key={dayName} className="bg-surface border border-hairline rounded-card mb-3 overflow-hidden">
             {/* Day header */}
             <button
               onClick={() => toggleDay(dayName)}
-              className="w-full flex items-center justify-between p-4 hover:bg-bg2 active:bg-bg3 transition-colors duration-150 cursor-pointer"
+              className="w-full flex items-center justify-between p-4 hover:bg-surface-2 active:bg-surface-2 transition-colors duration-150 cursor-pointer"
             >
               <div className="text-left">
-                <div className={`font-condensed text-lg font-bold ${isToday ? 'text-accent' : 'text-text1'}`}>
+                <div className={`font-sans text-lg font-bold ${isToday ? 'text-clay' : 'text-ink'}`}>
                   {wo.day}{isToday ? ' — Today' : ''}
                 </div>
-                <div className="text-xs text-text3 mt-0.5">{wo.name}</div>
+                <div className="text-xs text-ink-3 mt-0.5">{wo.name}</div>
               </div>
               <div className="flex items-center gap-2">
-                {done && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/22">Done</span>}
-                <ChevronRight size={18} className={`text-text3 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} />
+                {done && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-clay-wash text-clay border border-clay-dim">Done</span>}
+                <ChevronRight size={18} className={`text-ink-3 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} />
               </div>
             </button>
 
@@ -85,15 +85,15 @@ export default function WorkoutsTab() {
 
                 {/* Custom exercises */}
                 {customExs.map((ex, idx) => (
-                  <div key={ex.id} className="bg-bg2 border border-info/20 rounded-[10px] p-3.5 mb-3">
+                  <div key={ex.id} className="bg-surface-2 border border-info/20 rounded-sm p-3.5 mb-3">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-condensed text-base font-bold">{ex.name}</div>
+                      <div className="font-sans text-base font-bold">{ex.name}</div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/20 uppercase">Custom</span>
-                        {isToday && <button onClick={() => deleteCustomEx(dayName, idx)} className="text-danger/60 hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>}
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info/10 text-ink-2 border border-info/20 uppercase">Custom</span>
+                        {isToday && <button onClick={() => deleteCustomEx(dayName, idx)} className="text-clay/60 hover:text-clay cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>}
                       </div>
                     </div>
-                    <div className="text-[11px] text-text3">{ex.sets} × {ex.reps} reps · Rest {ex.rest}</div>
+                    <div className="text-[11px] text-ink-3">{ex.sets} × {ex.reps} reps · Rest {ex.rest}</div>
                   </div>
                 ))}
 
@@ -101,14 +101,14 @@ export default function WorkoutsTab() {
                 {isToday && (
                   <>
                     {addExDay !== dayName ? (
-                      <button onClick={() => setAddExDay(dayName)} className="w-full py-2.5 bg-bg3 border border-border rounded-[10px] text-sm font-semibold text-text2 mb-3">
+                      <button onClick={() => setAddExDay(dayName)} className="w-full py-2.5 bg-surface-2 border border-hairline rounded-sm text-sm font-semibold text-ink-2 mb-3">
                         + Add Exercise
                       </button>
                     ) : (
-                      <div className="bg-bg2 border border-accent/18 rounded-[10px] p-3.5 mb-3">
-                        <div className="text-xs font-bold text-text2 mb-3">Custom Exercise</div>
+                      <div className="bg-surface-2 border border-clay-dim rounded-sm p-3.5 mb-3">
+                        <div className="text-xs font-bold text-ink-2 mb-3">Custom Exercise</div>
                         <input type="text" value={newEx.name} onChange={e => setNewEx(p => ({ ...p, name: e.target.value }))}
-                          placeholder="Exercise name" className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2.5 mb-2 outline-none focus:border-accent text-text1" />
+                          placeholder="Exercise name" className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2.5 mb-2 outline-none focus:border-clay text-ink" />
                         <div className="grid grid-cols-2 gap-2 mb-3">
                           {[
                             { label:'Sets', val: String(newEx.sets), key:'sets', type:'number' },
@@ -117,15 +117,15 @@ export default function WorkoutsTab() {
                             { label:'Load (kg)', val: String(newEx.load), key:'load', type:'number' },
                           ].map(f => (
                             <div key={f.key}>
-                              <div className="text-[10px] text-text3 uppercase font-bold mb-1">{f.label}</div>
+                              <div className="text-[10px] text-ink-3 uppercase font-bold mb-1">{f.label}</div>
                               <input type={f.type} value={f.val} onChange={e => setNewEx(p => ({ ...p, [f.key]: f.type === 'number' ? +e.target.value : e.target.value }))}
-                                className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2 outline-none focus:border-accent text-text1" />
+                                className="w-full bg-surface-2 border border-hairline rounded-lg text-sm px-3 py-2 outline-none focus:border-clay text-ink" />
                             </div>
                           ))}
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => addCustomEx(dayName)} className="flex-1 py-2.5 bg-gradient-to-r from-accent to-green-400 text-black font-bold rounded-lg text-sm">Add</button>
-                          <button onClick={() => setAddExDay(null)} className="flex-[0.6] py-2.5 bg-bg3 border border-border rounded-lg text-sm font-semibold text-text2">Cancel</button>
+                          <button onClick={() => addCustomEx(dayName)} className="flex-1 py-2.5 bg-clay hover:bg-clay-hover text-surface font-bold rounded-lg text-sm">Add</button>
+                          <button onClick={() => setAddExDay(null)} className="flex-[0.6] py-2.5 bg-surface-2 border border-hairline rounded-lg text-sm font-semibold text-ink-2">Cancel</button>
                         </div>
                       </div>
                     )}
@@ -133,15 +133,15 @@ export default function WorkoutsTab() {
                 )}
 
                 {/* Cardio */}
-                <div className="bg-info/4 border border-info/14 rounded-[10px] p-3.5">
-                  <div className="text-[11px] font-bold text-info uppercase tracking-wider mb-1">Cardio</div>
-                  <div className="text-sm text-text2 mb-3">{wo.cardio}</div>
+                <div className="bg-info/4 border border-info/14 rounded-sm p-3.5">
+                  <div className="text-[11px] font-bold text-ink-2 uppercase tracking-wider mb-1">Cardio</div>
+                  <div className="text-sm text-ink-2 mb-3">{wo.cardio}</div>
                   {isToday && (
                     <button onClick={() => toggleCardio(dayName, dayDate)}
                       className={`w-full py-2.5 rounded-lg text-sm font-bold border transition-all ${
                         dayData.cardio
-                          ? 'bg-accent/10 border-accent/28 text-accent'
-                          : 'bg-info/9 border-info/18 text-info'
+                          ? 'bg-clay-wash border-clay-dim text-clay'
+                          : 'bg-info/9 border-info/18 text-ink-2'
                       }`}>
                       {dayData.cardio ? <span className="flex items-center justify-center gap-1.5"><Check size={14} /> Cardio Done</span> : 'Mark Cardio Done'}
                     </button>

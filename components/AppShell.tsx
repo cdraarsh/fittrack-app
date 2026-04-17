@@ -35,8 +35,8 @@ export default function AppShell() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin" />
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-hairline border-t-clay rounded-full animate-spin" />
       </div>
     );
   }
@@ -54,43 +54,43 @@ export default function AppShell() {
   return (
     <div className="max-w-app mx-auto min-h-screen flex flex-col pb-20">
       {/* Header */}
-      <header className="bg-bg1 border-b border-accent/10 px-5 py-3 sticky top-0 z-40">
+      <header className="bg-surface border-b border-hairline px-5 py-3 sticky top-0 z-40">
         <div className="flex items-center justify-between mb-1">
-          <h1 className="font-condensed text-3xl font-black gradient-text tracking-tight">FitTrack</h1>
+          <h1 className="font-sans text-3xl font-black text-ink tracking-tight">FitTrack</h1>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+            <span className="font-mono tabular-nums text-xs font-bold px-3 py-1 rounded-full bg-surface-2 text-ink-2 border border-hairline">
               Week {weekNum}/{totalWeeks}
             </span>
-            <UserButton appearance={{ variables: { colorPrimary: '#22c55e', colorBackground: '#161b24', colorText: '#f1f5f9' } }} />
+            <UserButton appearance={{ variables: { colorPrimary: '#B84B3A', colorBackground: '#FFFDF7', colorText: '#121110' } }} />
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-text2">
+          <span className="text-xs text-ink-2">
             {today.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' })}
           </span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider ${
-            isGymDay ? 'bg-accent/10 text-accent border border-accent/20' : 'bg-text3/10 text-text2 border border-border'
+          <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider ${
+            isGymDay ? 'bg-clay-wash text-clay border border-clay-dim' : 'bg-surface-2 text-ink-2 border border-hairline'
           }`}>
             {isGymDay ? 'Gym Day' : 'Rest Day'}
           </span>
           {settings.name && (
-            <span className="text-xs text-text3 ml-auto">Hey, {settings.name}</span>
+            <span className="text-xs text-ink-3 ml-auto">Hey, {settings.name}</span>
           )}
         </div>
       </header>
 
       {/* Tab nav */}
-      <nav className="bg-bg1 border-b border-border sticky top-[69px] z-39 px-2.5 py-1.5 flex gap-1">
+      <nav className="bg-surface border-b border-hairline sticky top-[69px] z-39 px-2.5 py-1.5 flex gap-1">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setCurrentTab(t.id)}
-            className={`flex-1 min-h-[48px] py-1.5 px-1 rounded-lg transition-colors duration-150 cursor-pointer flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
+            className={`flex-1 min-h-[48px] py-1.5 px-1 rounded-sm transition-colors duration-150 cursor-pointer flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
               t.id === 'settings' ? 'flex-none px-3' : ''
             } ${
               currentTab === t.id
-                ? 'text-accent bg-accent/10'
-                : 'text-text3 hover:text-text2 hover:bg-bg2'
+                ? 'text-clay bg-clay-wash'
+                : 'text-ink-3 hover:text-ink-2 hover:bg-surface-2'
             }`}
           >
             {t.icon}
