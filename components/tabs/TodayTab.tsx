@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import { Droplets, Moon, XCircle, Layers, TrendingUp, Flame, Trophy } from 'lucide-react';
 
 const PHASE_ICONS = {
-  foundation: <Layers size={20} className="text-purple" />,
-  build:      <TrendingUp size={20} className="text-purple" />,
-  strength:   <Flame size={20} className="text-purple" />,
-  peak:       <Trophy size={20} className="text-purple" />,
+  foundation: <Layers size={20} />,
+  build:      <TrendingUp size={20} />,
+  strength:   <Flame size={20} />,
+  peak:       <Trophy size={20} />,
 } as Record<string, React.ReactNode>;
 import { useApp } from '@/lib/store';
 import { DAYS } from '@/lib/constants';
@@ -129,24 +129,24 @@ export default function TodayTab() {
       {isSunday && (() => {
         const ws = computeWeeklySummary(settings, dayCache, weightCache);
         return (
-          <div className="bg-gradient-to-br from-accent/5 to-info/5 border border-accent/16 rounded-card p-4 mb-3">
-            <div className="font-condensed text-sm font-black uppercase tracking-widest text-accent mb-3">Week {weekNum}/{totalWeeks} Summary</div>
+          <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+            <div className="font-sans text-sm font-black uppercase tracking-widest text-clay mb-3">Week <span className="font-mono tabular-nums">{weekNum}</span>/<span className="font-mono tabular-nums">{totalWeeks}</span> Summary</div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { val: `${ws.sessionsDone}/${ws.sessionsScheduled}`, label: 'Sessions', color: ws.sessionsDone === ws.sessionsScheduled ? 'text-accent' : 'text-warn' },
-                { val: ws.weightDelta !== null ? `${ws.weightDelta > 0 ? '+' : '−'}${Math.abs(ws.weightDelta)} kg` : '—', label: 'Weight Δ', color: ws.weightDelta !== null && ws.weightDelta <= 0 ? 'text-accent' : 'text-danger' },
-                { val: ws.avgCals !== null ? `${ws.avgCals} kcal` : '—', label: 'Avg Calories', color: ws.avgCals && ws.avgCals <= ws.calTarget ? 'text-accent' : 'text-danger' },
-                { val: ws.avgWater !== null ? `${ws.avgWater} gl` : '—', label: 'Avg Water', color: 'text-info' },
-              ].map(({ val, label, color }) => (
-                <div key={label} className="bg-bg2 rounded-[10px] p-2.5">
-                  <div className={`font-condensed text-lg font-black ${color}`}>{val}</div>
-                  <div className="text-[10px] text-text3 uppercase tracking-wider font-bold mt-0.5">{label}</div>
+                { val: `${ws.sessionsDone}/${ws.sessionsScheduled}`, label: 'Sessions' },
+                { val: ws.weightDelta !== null ? `${ws.weightDelta > 0 ? '+' : '−'}${Math.abs(ws.weightDelta)} kg` : '—', label: 'Weight Δ' },
+                { val: ws.avgCals !== null ? `${ws.avgCals} kcal` : '—', label: 'Avg Calories' },
+                { val: ws.avgWater !== null ? `${ws.avgWater} gl` : '—', label: 'Avg Water' },
+              ].map(({ val, label }) => (
+                <div key={label} className="bg-surface-2 border border-hairline rounded-sm p-2.5">
+                  <div className="font-mono tabular-nums text-lg font-semibold text-ink">{val}</div>
+                  <div className="font-mono text-[10px] text-ink-3 uppercase tracking-wider font-bold mt-0.5">{label}</div>
                 </div>
               ))}
             </div>
             {ws.bestLift && (
-              <div className="mt-2.5 text-xs text-text3">
-                Best lift: <strong className="text-warn">{ws.bestLift.weight} kg × {ws.bestLift.reps}</strong> — {ws.bestLift.name}
+              <div className="mt-2.5 text-xs text-ink-3">
+                Best lift: <strong className="font-mono tabular-nums text-clay">{ws.bestLift.weight} kg × {ws.bestLift.reps}</strong> — {ws.bestLift.name}
               </div>
             )}
           </div>
@@ -155,12 +155,12 @@ export default function TodayTab() {
 
       {/* Phase card */}
       {phase && (
-        <div className="flex items-center gap-3 bg-gradient-to-br from-purple/5 to-info/5 border border-purple/18 rounded-card p-3.5 mb-3">
-          <div className="w-10 h-10 bg-purple/10 rounded-[10px] flex items-center justify-center flex-shrink-0">{PHASE_ICONS[phase.icon]}</div>
+        <div className="flex items-center gap-3 bg-surface border border-hairline rounded-card p-3.5 mb-3">
+          <div className="w-10 h-10 bg-surface-2 border border-hairline rounded-sm flex items-center justify-center flex-shrink-0 text-ink-2">{PHASE_ICONS[phase.icon]}</div>
           <div>
-            <div className="text-[10px] text-purple font-black uppercase tracking-wider mb-0.5">Week {weekNum}/{totalWeeks} · {phase.weeks}</div>
-            <div className="font-condensed text-base font-black">{phase.phase}</div>
-            <div className="text-[12px] text-text3 leading-snug">{phase.desc}</div>
+            <div className="font-mono text-[10px] text-ink-2 font-black uppercase tracking-wider mb-0.5">Week <span className="tabular-nums">{weekNum}</span>/<span className="tabular-nums">{totalWeeks}</span> · {phase.weeks}</div>
+            <div className="font-sans text-base font-black text-ink">{phase.phase}</div>
+            <div className="text-[12px] text-ink-3 leading-snug">{phase.desc}</div>
           </div>
         </div>
       )}
@@ -272,13 +272,13 @@ export default function TodayTab() {
       </div>
 
       {/* Notes */}
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Session Notes</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink mb-3">Session Notes</div>
         <textarea
           defaultValue={data.notes}
           onChange={e => saveNotes(e.target.value)}
           placeholder="Form observations, how you felt, PRs…"
-          className="w-full bg-bg2 border border-border rounded-[10px] text-sm text-text1 p-3 resize-none outline-none focus:border-accent min-h-[80px] leading-relaxed"
+          className="w-full bg-surface-2 border border-hairline rounded-sm text-sm text-ink p-3 resize-none outline-none focus:border-clay min-h-[80px] leading-relaxed"
         />
       </div>
 
