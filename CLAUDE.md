@@ -102,15 +102,12 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 
 ## Design System
 
-**Locked 2026-04-17.** Single source of truth: [`DESIGN.md`](./DESIGN.md).
-
-Read DESIGN.md before making any visual or UI decision. All colors, fonts, spacing, components, charts, icons, completion rings, celebrations, and illustrations are specified there. Do not invent new tokens.
+**Updated 2026-04-22.** Dark athletic theme (v2.0) — supersedes the paper+clay v1.0 system.
 
 Quick rules:
-- Two type families only: **Barlow** (everything visual) + **JetBrains Mono** (every number, every label).
-- Palette: warm paper `#F5F1E8`, ink `#121110`, single clay accent `#B84B3A`. No green except `--success` for completion.
-- Hairlines (1px `#E0D8C6`), not shadows. Cards have borders, not drop shadows.
-- Numbers are the hero — always tabular, always mono.
-- Clay accent appears at most twice per screen.
-- Old dark + green palette (v1.5) is deprecated. Migration in progress on `feat/design-system-v1.0`.
-- Canonical visual reference: `~/.gstack/projects/cdraarsh-fittrack-app/designs/design-system-20260416/preview.html`
+- Two type families: **Barlow Condensed** (display/stats/headings) + **Barlow** (body, labels).
+- Palette: near-black `#080b10` canvas, electric green `#22c55e` primary accent, orange `#f97316` energy/in-progress.
+- Card surfaces: `bg-bg1` (#0e1117), nested: `bg-bg2` (#161b24), inputs: `bg-bg3` (#1e2532), borders: `#232b38`.
+- Accent tinted cards: `bg-accent/5 border-accent/18`. Never solid accent fills as backgrounds.
+- Bottom tab nav (fixed, blurred). Sticky top header with gradient wordmark.
+- Numbers are the hero — Barlow Condensed 900, tabular-nums.
