@@ -15,18 +15,17 @@ import SettingsTab   from './tabs/SettingsTab';
 import RestTimer     from './shared/RestTimer';
 import type { TabName } from '@/lib/types';
 
-const TABS: { id: TabName; label: string; icon: React.ReactNode }[] = [
-  { id: 'today',     label: 'Today',    icon: <Zap size={16} /> },
-  { id: 'workouts',  label: 'Train',    icon: <Dumbbell size={16} /> },
-  { id: 'nutrition', label: 'Eat',      icon: <Apple size={16} /> },
-  { id: 'progress',  label: 'Stats',    icon: <TrendingUp size={16} /> },
-  { id: 'settings',  label: '',         icon: <Settings2 size={16} /> },
+const TABS: { id: TabName; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
+  { id: 'today',     label: 'Today',    Icon: Zap },
+  { id: 'workouts',  label: 'Train',    Icon: Dumbbell },
+  { id: 'nutrition', label: 'Eat',      Icon: Apple },
+  { id: 'progress',  label: 'Stats',    Icon: TrendingUp },
+  { id: 'settings',  label: 'Settings', Icon: Settings2 },
 ];
 
 export default function AppShell() {
   const { settings, isLoading, currentTab, setCurrentTab } = useApp();
 
-  // Register PWA service worker
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -46,30 +45,40 @@ export default function AppShell() {
   }
 
   const today = new Date();
-  const todayName = DAYS[today.getDay()];
-  const isGymDay    = todayIsGymDay(settings);
-  const weekNum     = getWeekNum(settings);
-  const totalWeeks  = getProgramWeeks(settings);
+  const isGymDay   = todayIsGymDay(settings);
+  const weekNum    = getWeekNum(settings);
+  const totalWeeks = getProgramWeeks(settings);
 
   return (
-    <div className="max-w-app mx-auto min-h-screen flex flex-col pb-20">
+    <div className="max-w-app mx-auto min-h-screen flex flex-col bg-bg">
       {/* Header */}
-      <header className="bg-bg1 border-b border-accent/10 px-5 py-3 sticky top-0 z-40">
+      <header className="bg-bg1 border-b border-border px-5 py-3 sticky top-0 z-40">
         <div className="flex items-center justify-between mb-1">
-          <h1 className="font-condensed text-3xl font-black gradient-text tracking-tight">FitTrack</h1>
+          <h1
+            className="font-condensed text-[28px] font-black tracking-tight"
+            style={{
+              background: 'linear-gradient(135deg,#22c55e,#4ade80)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            FitTrack
+          </h1>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+            <span className="font-sans text-xs font-bold px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
               Week {weekNum}/{totalWeeks}
             </span>
-            <UserButton appearance={{ variables: { colorPrimary: '#22c55e', colorBackground: '#161b24', colorText: '#f1f5f9' } }} />
+            <UserButton appearance={{ variables: { colorPrimary: '#22c55e', colorBackground: '#0e1117', colorText: '#f1f5f9' } }} />
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-text2">
-            {today.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' })}
+            {today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider ${
-            isGymDay ? 'bg-accent/10 text-accent border border-accent/20' : 'bg-text3/10 text-text2 border border-border'
+          <span className={`font-sans text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            isGymDay
+              ? 'bg-accent/10 text-accent border border-accent/20'
+              : 'bg-bg2 text-text2 border border-border'
           }`}>
             {isGymDay ? 'Gym Day' : 'Rest Day'}
           </span>
@@ -79,28 +88,8 @@ export default function AppShell() {
         </div>
       </header>
 
-      {/* Tab nav */}
-      <nav className="bg-bg1 border-b border-border sticky top-[69px] z-39 px-2.5 py-1.5 flex gap-1">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setCurrentTab(t.id)}
-            className={`flex-1 min-h-[48px] py-1.5 px-1 rounded-lg transition-colors duration-150 cursor-pointer flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
-              t.id === 'settings' ? 'flex-none px-3' : ''
-            } ${
-              currentTab === t.id
-                ? 'text-accent bg-accent/10'
-                : 'text-text3 hover:text-text2 hover:bg-bg2'
-            }`}
-          >
-            {t.icon}
-            {t.label && <span className="text-[10px] font-semibold">{t.label}</span>}
-          </button>
-        ))}
-      </nav>
-
       {/* Tab content */}
-      <main className="flex-1 p-4">
+      <main className="flex-1 p-4 pb-28">
         {currentTab === 'today'     && <TodayTab />}
         {currentTab === 'workouts'  && <WorkoutsTab />}
         {currentTab === 'nutrition' && <NutritionTab />}
@@ -109,6 +98,28 @@ export default function AppShell() {
       </main>
 
       <RestTimer />
+
+      {/* Bottom tab nav */}
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-app w-full z-40"
+        style={{ background: 'rgba(14,17,23,0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex gap-1 px-2.5 pt-2 pb-5">
+          {TABS.map(({ id, label, Icon }) => {
+            const active = currentTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setCurrentTab(id)}
+                className={`flex-1 min-h-12 py-1.5 px-1 rounded-sm cursor-pointer flex flex-col items-center justify-center gap-1 active:scale-95 transition-all duration-150 ${
+                  active ? 'text-accent' : 'text-text3 hover:text-text2'
+                }`}
+              >
+                <Icon size={20} className={active ? 'text-accent' : 'text-text3'} />
+                <span className={`text-[10px] font-semibold ${active ? 'text-accent' : 'text-text3'}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

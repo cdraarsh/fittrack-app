@@ -39,27 +39,27 @@ export default function SwapSheet({ exId, onClose }: Props) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[59] bg-bg/70" onClick={onClose} />
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app z-[60] bg-bg1 border border-border rounded-t-2xl p-5 pb-8">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-4">Swap Exercise</div>
+      <div className="fixed inset-0 z-[59] bg-ink/70" onClick={onClose} />
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app z-[60] bg-surface border border-hairline rounded-t-2xl p-5 pb-8">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-4">Swap Exercise</div>
         {options.map(opt => (
           <button
             key={opt.name}
             onClick={() => apply(opt.name, opt.isOriginal)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl mb-2 border transition-colors text-left ${
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-sm mb-2 border transition-colors text-left ${
               opt.name === active
-                ? 'bg-accent/10 border-accent/35 text-text1'
-                : 'bg-bg2 border-border text-text2 hover:border-accent/25'
+                ? 'bg-clay-wash border-clay-dim text-ink'
+                : 'bg-surface-2 border-hairline text-ink-2 hover:border-clay-dim'
             }`}
           >
             <span className="text-sm font-semibold">{opt.name}</span>
             <span className="flex gap-2">
-              {opt.isOriginal && <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-bg3 text-text3">Original</span>}
-              {opt.name === active && <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-accent/15 text-accent">Active</span>}
+              {opt.isOriginal && <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-surface-2 text-ink-3">Original</span>}
+              {opt.name === active && <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-clay-wash text-clay">Active</span>}
             </span>
           </button>
         ))}
-        <button onClick={onClose} className="w-full mt-2 py-2.5 bg-bg3 border border-border rounded-xl text-sm font-semibold text-text2">
+        <button onClick={onClose} className="w-full mt-2 py-2.5 bg-surface-2 border border-hairline rounded-sm text-sm font-semibold text-ink-2">
           Cancel
         </button>
       </div>

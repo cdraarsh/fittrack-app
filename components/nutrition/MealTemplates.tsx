@@ -20,17 +20,17 @@ export default function MealTemplates({ onAdd }: Props) {
 
   return (
     <div className="mb-3">
-      <div className="text-[10px] text-text3 uppercase font-bold mb-2 tracking-wider">Quick Add from Templates</div>
+      <div className="text-[10px] text-ink-3 uppercase font-bold mb-2 tracking-wider">Quick Add from Templates</div>
       <div className="flex gap-2 flex-wrap">
         {templates.map(t => (
-          <div key={t.id} className="flex items-center gap-1 bg-bg3 border border-border rounded-xl overflow-hidden">
+          <div key={t.id} className="flex items-center gap-1 bg-surface-2 border border-hairline rounded-sm overflow-hidden">
             <button
               onClick={() => onAdd({ name: t.name, protein: t.protein, carbs: t.carbs, fat: t.fat, calories: t.calories })}
-              className="pl-3 pr-2 py-2 text-xs font-semibold text-text1 hover:text-accent transition-colors text-left">
+              className="pl-3 pr-2 py-2 text-xs font-semibold text-ink hover:text-clay transition-colors text-left">
               <div className="font-bold">{t.name}</div>
-              <div className="text-[10px] text-text3 mt-0.5">{t.calories} kcal · P{t.protein}g</div>
+              <div className="text-[10px] text-ink-3 mt-0.5">{t.calories} kcal · P{t.protein}g</div>
             </button>
-            <button onClick={() => deleteTpl(t.id)} className="pr-2 pl-1 py-2 text-text3 hover:text-danger text-sm">×</button>
+            <button onClick={() => deleteTpl(t.id)} className="pr-2 pl-1 py-2 text-ink-3 hover:text-clay text-sm">×</button>
           </div>
         ))}
       </div>
@@ -56,8 +56,8 @@ export function SaveTemplateButton({ meal }: { meal: MealEntry }) {
       disabled={isSaved}
       className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
         isSaved
-          ? 'text-text3 border-border cursor-default'
-          : 'text-accent border-accent/30 hover:bg-accent/10'
+          ? 'text-ink-3 border-hairline cursor-default'
+          : 'text-clay border-clay-dim hover:bg-clay-wash'
       }`}>
       {isSaved ? '★ Saved' : '☆ Save'}
     </button>

@@ -54,18 +54,18 @@ export default function PhotoGrid() {
   }
 
   return (
-    <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+    <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-[13px] font-black uppercase tracking-widest text-text2">Progress Photos</div>
+          <div className="text-[13px] font-black uppercase tracking-widest text-ink-2">Progress Photos</div>
           {compareA && (
-            <div className="text-[11px] text-accent mt-0.5">Tap another photo to compare</div>
+            <div className="text-[11px] text-clay mt-0.5">Tap another photo to compare</div>
           )}
         </div>
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="text-xs font-bold px-3 py-1.5 bg-bg3 border border-border rounded-lg text-text2 disabled:opacity-50"
+          className="text-xs font-bold px-3 py-1.5 bg-surface-2 border border-hairline rounded-lg text-ink-2 disabled:opacity-50"
         >
           {uploading ? 'Uploading…' : '+ Add Photo'}
         </button>
@@ -77,17 +77,17 @@ export default function PhotoGrid() {
       <input
         type="text" value={note} onChange={e => setNote(e.target.value)}
         placeholder="Add a note (optional)"
-        className="w-full bg-bg3 border border-border rounded-xl text-sm px-3 py-2.5 outline-none focus:border-accent text-text1 mb-3"
+        className="w-full bg-surface-2 border border-hairline rounded-sm text-sm px-3 py-2.5 outline-none focus:border-clay text-ink mb-3"
       />
 
       {photoCache.length === 0 ? (
-        <div className="text-center py-8 text-text3 text-sm">No progress photos yet</div>
+        <div className="text-center py-8 text-ink-3 text-sm">No progress photos yet</div>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {photoCache.map(photo => {
             const isCompareA = compareA?.id === photo.id;
             return (
-              <div key={photo.id} className={`relative rounded-xl overflow-hidden border-2 transition-all ${isCompareA ? 'border-accent' : 'border-transparent'}`}>
+              <div key={photo.id} className={`relative rounded-sm overflow-hidden border-2 transition-all ${isCompareA ? 'border-clay' : 'border-transparent'}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo.url}
@@ -105,12 +105,12 @@ export default function PhotoGrid() {
                 </div>
                 <button
                   onClick={() => handleDelete(photo)}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center hover:bg-danger/70"
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center hover:bg-clay/50"
                 >
                   ×
                 </button>
                 {isCompareA && (
-                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-accent text-black text-[10px] font-black">A</div>
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-clay text-surface text-[10px] font-black">A</div>
                 )}
               </div>
             );
@@ -121,18 +121,18 @@ export default function PhotoGrid() {
       {/* Compare view */}
       {compareA && photoCache.length > 1 && (
         <div className="mt-3">
-          <div className="text-[11px] text-text3 mb-2">Compare — tap a photo above to set B</div>
+          <div className="text-[11px] text-ink-3 mb-2">Compare — tap a photo above to set B</div>
           <div className="grid grid-cols-2 gap-2">
             {[compareA, photoCache.find(p => p.id !== compareA.id)].filter(Boolean).map((photo, i) => photo && (
               <div key={photo.id}>
-                <div className="text-[10px] text-text3 font-bold mb-1 text-center">{i === 0 ? 'Before' : 'After'}</div>
+                <div className="text-[10px] text-ink-3 font-bold mb-1 text-center">{i === 0 ? 'Before' : 'After'}</div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo.url} alt={photo.date} className="w-full aspect-[3/4] object-cover rounded-xl" />
-                <div className="text-[10px] text-text3 text-center mt-1">{photo.date}</div>
+                <img src={photo.url} alt={photo.date} className="w-full aspect-[3/4] object-cover rounded-sm" />
+                <div className="text-[10px] text-ink-3 text-center mt-1">{photo.date}</div>
               </div>
             ))}
           </div>
-          <button onClick={() => setCompareA(null)} className="mt-2 w-full py-2 text-xs font-bold text-text3 bg-bg3 border border-border rounded-lg">Clear Compare</button>
+          <button onClick={() => setCompareA(null)} className="mt-2 w-full py-2 text-xs font-bold text-ink-3 bg-surface-2 border border-hairline rounded-lg">Clear Compare</button>
         </div>
       )}
 
@@ -140,7 +140,7 @@ export default function PhotoGrid() {
       {lightbox && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox.url} alt={lightbox.date} className="max-h-[90vh] max-w-full rounded-xl object-contain" onClick={e => e.stopPropagation()} />
+          <img src={lightbox.url} alt={lightbox.date} className="max-h-[90vh] max-w-full rounded-sm object-contain" onClick={e => e.stopPropagation()} />
           <div className="absolute bottom-8 text-white text-sm font-semibold">{lightbox.date}{lightbox.note ? ` · ${lightbox.note}` : ''}</div>
         </div>
       )}

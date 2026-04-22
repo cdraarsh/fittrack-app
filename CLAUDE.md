@@ -99,3 +99,15 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Design System
+
+**Updated 2026-04-22.** Dark athletic theme (v2.0) — supersedes the paper+clay v1.0 system.
+
+Quick rules:
+- Two type families: **Barlow Condensed** (display/stats/headings) + **Barlow** (body, labels).
+- Palette: near-black `#080b10` canvas, electric green `#22c55e` primary accent, orange `#f97316` energy/in-progress.
+- Card surfaces: `bg-bg1` (#0e1117), nested: `bg-bg2` (#161b24), inputs: `bg-bg3` (#1e2532), borders: `#232b38`.
+- Accent tinted cards: `bg-accent/5 border-accent/18`. Never solid accent fills as backgrounds.
+- Bottom tab nav (fixed, blurred). Sticky top header with gradient wordmark.
+- Numbers are the hero — Barlow Condensed 900, tabular-nums.

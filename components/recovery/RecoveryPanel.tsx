@@ -12,11 +12,11 @@ const SCALE_LABELS: Record<string, string[]> = {
 };
 
 const SCALE_COLORS: Record<number, string> = {
-  1: 'bg-danger border-danger/60 text-danger',
-  2: 'bg-warn/80 border-warn/60 text-warn',
-  3: 'bg-yellow-400/80 border-yellow-400/60 text-yellow-300',
-  4: 'bg-accent/80 border-accent/60 text-accent',
-  5: 'bg-accent border-accent text-black',
+  1: 'bg-clay-wash border-clay-dim text-clay',
+  2: 'bg-clay-wash border-clay-dim text-clay',
+  3: 'bg-surface-2 border-hairline-2 text-mustard',
+  4: 'bg-surface-2 border-hairline-2 text-sage',
+  5: 'bg-sage/10 border-sage/40 text-sage',
 };
 
 function ScaleRow({
@@ -29,11 +29,11 @@ function ScaleRow({
 }) {
   const labels = SCALE_LABELS[field as string] ?? [];
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-2.5 border-b border-hairline last:border-0">
       <div>
-        <div className="text-sm">{label}</div>
+        <div className="text-sm text-ink">{label}</div>
         {value != null && (
-          <div className="text-[11px] text-text3 mt-0.5">{labels[value - 1] ?? ''}</div>
+          <div className="text-[11px] text-ink-3 mt-0.5">{labels[value - 1] ?? ''}</div>
         )}
       </div>
       <div className="flex gap-1.5">
@@ -41,8 +41,8 @@ function ScaleRow({
           <button
             key={n}
             onClick={() => onChange(value === n ? 0 : n)}
-            className={`w-8 h-8 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
-              value === n ? SCALE_COLORS[n] : 'bg-bg3 border-border text-text3/50'
+            className={`w-8 h-8 rounded-sm border font-mono text-xs font-bold transition-colors cursor-pointer ${
+              value === n ? SCALE_COLORS[n] : 'bg-surface-2 border-hairline text-ink-3/50'
             }`}
           >
             {n}
@@ -76,10 +76,10 @@ export default function RecoveryPanel() {
     : 'How is your body recovering?';
 
   return (
-    <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+    <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
       <div className="mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2">{title}</div>
-        <div className="text-xs text-text3 mt-0.5">{subtitle}</div>
+        <div className="font-sans text-[13px] font-black uppercase tracking-widest text-ink">{title}</div>
+        <div className="text-xs text-ink-3 mt-0.5">{subtitle}</div>
       </div>
 
       <ScaleRow label="Energy"        field="energy"        value={rec.energy}        onChange={v => patch({ energy: v })} />
@@ -90,7 +90,7 @@ export default function RecoveryPanel() {
       {/* Optional numeric fields */}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div>
-          <div className="text-[10px] text-text3 uppercase font-bold mb-1">Sleep hours</div>
+          <div className="font-mono text-[10px] text-ink-3 uppercase font-bold mb-1">Sleep hours</div>
           <input
             type="number"
             inputMode="decimal"
@@ -100,18 +100,18 @@ export default function RecoveryPanel() {
             placeholder="e.g. 7.5"
             value={rec.sleep_hours ?? ''}
             onChange={e => patch({ sleep_hours: parseFloat(e.target.value) || undefined })}
-            className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2 outline-none focus:border-accent text-text1"
+            className="w-full bg-surface-2 border border-hairline rounded-sm font-mono tabular-nums text-sm px-3 py-2 outline-none focus:border-clay text-ink"
           />
         </div>
         <div>
-          <div className="text-[10px] text-text3 uppercase font-bold mb-1">Resting HR (bpm)</div>
+          <div className="font-mono text-[10px] text-ink-3 uppercase font-bold mb-1">Resting HR (bpm)</div>
           <input
             type="number"
             inputMode="numeric"
             placeholder="e.g. 58"
             value={rec.resting_hr ?? ''}
             onChange={e => patch({ resting_hr: parseInt(e.target.value) || undefined })}
-            className="w-full bg-bg3 border border-border rounded-lg text-sm px-3 py-2 outline-none focus:border-accent text-text1"
+            className="w-full bg-surface-2 border border-hairline rounded-sm font-mono tabular-nums text-sm px-3 py-2 outline-none focus:border-clay text-ink"
           />
         </div>
       </div>

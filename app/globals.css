@@ -6,6 +6,7 @@
 :root {
   --font-barlow: var(--font-barlow-sans), system-ui, sans-serif;
   --font-barlow-condensed: var(--font-barlow-cond), system-ui, sans-serif;
+  --font-jetbrains-mono: var(--font-jetbrains-mono-raw), ui-monospace, 'SF Mono', monospace;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,11 +30,3 @@ body {
 /* Focus-visible — keyboard nav only, no outlines on click */
 :focus { outline: none; }
 :focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; border-radius: 6px; }
-
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}

@@ -83,9 +83,9 @@ export default function PRTimeline({ settings, dayCache }: Props) {
 
   if (prList.length === 0) {
     return (
-      <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2 mb-3">Personal Records</div>
-        <div className="text-center py-8 text-text3 text-sm">Log sets to start tracking PRs</div>
+      <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2 mb-3">Personal Records</div>
+        <div className="text-center py-8 text-ink-3 text-sm">Log sets to start tracking PRs</div>
       </div>
     );
   }
@@ -93,10 +93,10 @@ export default function PRTimeline({ settings, dayCache }: Props) {
   const selectedHistory = selectedEx ? history[selectedEx] : null;
 
   return (
-    <div className="bg-bg1 border border-border rounded-card p-4 mb-3">
+    <div className="bg-surface border border-hairline rounded-card p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[13px] font-black uppercase tracking-widest text-text2">Personal Records</div>
-        <div className="text-xs text-text3">{prList.length} lifts</div>
+        <div className="text-[13px] font-black uppercase tracking-widest text-ink-2">Personal Records</div>
+        <div className="text-xs text-ink-3">{prList.length} lifts</div>
       </div>
 
       {prList.map(pr => {
@@ -109,34 +109,34 @@ export default function PRTimeline({ settings, dayCache }: Props) {
           <div key={pr.name}>
             <button
               onClick={() => setSelectedEx(isSelected ? null : exId)}
-              className="w-full flex items-center justify-between py-2.5 border-b border-border last:border-0 cursor-pointer text-left"
+              className="w-full flex items-center justify-between py-2.5 border-b border-hairline last:border-0 cursor-pointer text-left"
             >
               <div>
                 <div className="text-sm font-semibold flex items-center gap-2">
                   {pr.name}
                   {delta !== null && delta > 0 && (
-                    <span className="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-bold text-clay bg-clay-wash px-1.5 py-0.5 rounded">
                       +{delta} kg
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] text-text3">
+                <div className="text-[11px] text-ink-3">
                   {fmtShort(pr.date)}{pr.reps ? ` · ${pr.reps} reps` : ''}
                   {h.length > 1 ? ` · ${h.length} PRs` : ''}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="font-condensed text-xl font-black text-warn">
+                <div className="font-sans text-xl font-black text-mustard">
                   {pr.weight} <span className="text-sm font-semibold">kg</span>
                 </div>
-                <span className={`text-text3 text-xs transition-transform ${isSelected ? 'rotate-90' : ''}`}>▸</span>
+                <span className={`text-ink-3 text-xs transition-transform ${isSelected ? 'rotate-90' : ''}`}>▸</span>
               </div>
             </button>
 
             {isSelected && selectedHistory && (
               <div className="py-3">
                 {selectedHistory.length === 1 ? (
-                  <div className="text-xs text-text3 text-center py-4">First PR set on {fmtShort(selectedHistory[0].date)} — log more to see progression.</div>
+                  <div className="text-xs text-ink-3 text-center py-4">First PR set on {fmtShort(selectedHistory[0].date)} — log more to see progression.</div>
                 ) : (
                   <div className="relative h-40">
                     <canvas ref={chartRef} />
