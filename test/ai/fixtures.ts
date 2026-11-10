@@ -56,7 +56,7 @@ export function richInput(): StatsInput {
       seq: i,
       week: Math.ceil(i / 4),
       title: i % 2 ? 'Upper A' : 'Lower A',
-      status: completed ? 'completed' : i === 13 ? 'unlocked' : 'locked',
+      status: completed ? 'complete' : i === 13 ? 'up_next' : 'locked',
       completed_at: completed ? `${date}T18:00:00Z` : null,
     });
     const lift = i % 2 ? 'bench' : 'squat';

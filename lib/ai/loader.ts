@@ -100,6 +100,8 @@ async function exercisesById(db: SupabaseClient, ids: string[]) {
 /** Window of history the stats pack needs: last 28 days + a week of slack. */
 const HISTORY_DAYS = 35;
 
+const MAIN_LIFT_IDS = ['squat', 'deadlift', 'bench', 'shoulder'];
+
 export async function loadStatsInput(db: SupabaseClient, userId: string, today: string): Promise<StatsInput> {
   const since = addDays(today, -HISTORY_DAYS);
   const program = await activeProgram(db, userId);
@@ -115,9 +117,9 @@ export async function loadStatsInput(db: SupabaseClient, userId: string, today: 
     ),
   ]);
 
-  const done = sessions.filter(s => s.status === 'completed' || !!s.completed_at);
+  const done = sessions.filter(s => s.status === 'complete' || !!s.completed_at);
   const lastDone = [...done].sort((a, b) => b.seq - a.seq)[0];
-  const next = sessions.filter(s => !(s.status === 'completed' || s.completed_at)).sort((a, b) => a.seq - b.seq)[0];
+  const next = sessions.filter(s => !(s.status === 'complete' || s.completed_at)).sort((a, b) => a.seq - b.seq)[0];
   const relevant = sessions.filter(
     s => s === lastDone || s === next || (s.completed_at && s.completed_at.slice(0, 10) >= since),
   );
@@ -127,7 +129,9 @@ export async function loadStatsInput(db: SupabaseClient, userId: string, today: 
     exercisesById(db, sessionExercises.map(se => se.exercise_id)),
   ]);
 
-  return { today, program, sessions, sessionExercises, setLogs, exercises, dailies, bodyWeights };
+  // Main lifts by library id (lib/exercises/seed.ts); names are not reliable.
+  const mainLiftIds = MAIN_LIFT_IDS.filter(id => exercises.some(e => e.id === id));
+  return { today, program, sessions, sessionExercises, setLogs, exercises, dailies, bodyWeights, mainLiftIds };
 }
 
 // ─── daily_insights ───────────────────────────────────────────────────────────

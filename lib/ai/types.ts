@@ -19,7 +19,7 @@ export interface ProgramSessionRow {
   seq: number;                      // 1-based session number in the program
   week: number | null;
   title: string | null;
-  status: string | null;            // 'locked' | 'unlocked' | 'completed' (foundation-defined)
+  status: string | null;            // 'locked' | 'up_next' | 'in_progress' | 'complete'
   completed_at: string | null;      // ISO timestamp
 }
 

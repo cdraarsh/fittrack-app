@@ -36,6 +36,7 @@
   ],
   "exclude": [
     "node_modules",
+    ".worktrees",
     "public/sw.js",
     "public/swe-worker-*.js"
   ]

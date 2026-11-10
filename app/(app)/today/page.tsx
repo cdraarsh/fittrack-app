@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Lock, PartyPopper, Play, Scale } from 'lucide-react';
-import CoachCardImpl from '@/components/coach/CoachCard';
+import CoachCard from '@/components/coach/CoachCard';
 import Spinner from '@/components/app/Spinner';
 import DailyInsight from '@/components/app/DailyInsight';
 import SessionLogger, { ruleMessage } from '@/components/workout/SessionLogger';
@@ -12,10 +12,6 @@ import { getDb } from '@/lib/local/db';
 import { saveBodyWeight, startProgram } from '@/lib/local/actions';
 import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, useProgramSessions, useProgress, useSettings } from '@/lib/local/hooks';
 import { addDays, localDate } from '@/lib/program';
-
-// TODO(after merge with v2): drop this cast — v2's CoachCard is self-contained
-// (`<CoachCard className? />`); this branch still has the v1 props-based one.
-const CoachCard = CoachCardImpl as unknown as React.ComponentType<{ className?: string }>;
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

@@ -67,7 +67,7 @@ const MAIN_LIFT_PATTERNS: RegExp[] = [
   /squat/i,
   /deadlift/i,
   /bench/i,
-  /overhead press|\bohp\b|military press/i,
+  /overhead press|\bohp\b|military press|shoulder press/i,
 ];
 
 /** Main lifts: explicit ids, else first exercise matching each main pattern, else none. */
@@ -158,7 +158,7 @@ export interface StatsPack {
 
 // ─── Builders ─────────────────────────────────────────────────────────────────
 
-const isDone = (s: ProgramSessionRow) => s.status === 'completed' || !!s.completed_at;
+const isDone = (s: ProgramSessionRow) => s.status === 'complete' || !!s.completed_at;
 
 function setDate(set: SetLogRow, session: ProgramSessionRow | undefined): string | null {
   if (session?.completed_at) return session.completed_at.slice(0, 10);
