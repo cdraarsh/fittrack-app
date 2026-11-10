@@ -27,6 +27,7 @@
     "@capacitor/push-notifications": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.1",
     "@clerk/nextjs": "^6.0.0",
+    "@garmin/fitsdk": "^21.221.0",
     "@supabase/supabase-js": "^2.49.0",
     "ai": "^6.0.149",
     "chart.js": "^4.4.0",
