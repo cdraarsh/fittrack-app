@@ -9,7 +9,8 @@ const decode = (part: string) => JSON.parse(Buffer.from(part, 'base64url').toStr
 describe('mintOwnerToken', () => {
   it('signs an HS256 JWT for the owner that Supabase RLS can read', () => {
     const now = Date.UTC(2026, 10, 10, 12);
-    const { token, expiresAt } = mintOwnerToken(now, 'test-secret');
+    const { token, expiresAt, expiresIn } = mintOwnerToken(now, 'test-secret');
+    expect(expiresIn).toBe(TOKEN_TTL_S);
     const [h, b, sig] = token.split('.');
     expect(decode(h)).toEqual({ alg: 'HS256', typ: 'JWT' });
     const claims = decode(b);

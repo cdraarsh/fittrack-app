@@ -52,6 +52,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           ) : outbox?.pending ? (
             <span className="text-[11px] text-text3">{outbox.pending} to sync</span>
           ) : null}
+          {outbox?.failed.length ? (
+            <Link href="/settings" className="text-[11px] text-warn" title="The server refused some changes — see Settings">
+              {outbox.failed.length} not synced
+            </Link>
+          ) : null}
         </div>
       </header>
 

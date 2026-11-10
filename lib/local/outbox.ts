@@ -51,6 +51,11 @@ export function classifyError(err: SendError): 'retry' | 'permanent' {
   const code = err.code ?? '';
   const status = err.status ?? 0;
   if (code === 'PGRST301' || code === 'PGRST302' || code === 'PGRST303') return 'retry'; // JWT
+  // Connection/pool/timeout, and the schema cache still reloading after a
+  // migration ("table/column not found in the schema cache"): try again later.
+  if (/^PGRST00[0-3]$/.test(code) || code === 'PGRST204' || code === 'PGRST205') return 'retry';
+  // Foreign key: the parent row (e.g. the session) hasn't reached the server yet.
+  if (code === '23503') return 'retry';
   if (/^(P0001|P0002|23\d{3}|22\d{3}|42\d{3})$/.test(code)) return 'permanent';
   if (code.startsWith('PGRST')) return 'permanent';
   if (status === 0 || status === 401 || status === 408 || status === 429 || status >= 500) return 'retry';

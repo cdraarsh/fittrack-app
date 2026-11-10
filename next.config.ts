@@ -13,6 +13,8 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: '/~offline', revision: process.env.VERCEL_GIT_COMMIT_SHA ?? `${Date.now()}` }],
 });
 
-const config: NextConfig = {};
+// NEXT_DIST_DIR lets a second dev server (e.g. e2e) run beside `npm run dev`
+// without both writing to .next.
+const config: NextConfig = { distDir: process.env.NEXT_DIST_DIR || '.next' };
 
 export default withSerwist(config);

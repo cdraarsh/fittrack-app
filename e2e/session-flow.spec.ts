@@ -69,4 +69,21 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await page.clock.setFixedTime(DAY2);
   await page.goto('/today');
   await expect(page.getByRole('heading', { name: /Day 2 · .* is up next/ })).toBeVisible();
+
+  // With a real Supabase behind the app, everything queued offline must reach it.
+  if (process.env.E2E_EXPECT_SYNC) {
+    const outbox = () =>
+      page.evaluate(
+        () =>
+          new Promise<string[]>((res) => {
+            const q = indexedDB.open('fittrack');
+            q.onsuccess = () => {
+              const g = q.result.transaction('outbox').objectStore('outbox').getAll();
+              g.onsuccess = () => res(g.result.map((o: { status: string }) => o.status));
+            };
+          }),
+      );
+    await expect.poll(outbox, { timeout: 60_000 }).toEqual([]);
+    await expect(page.getByText(/to sync|Offline|not synced/)).toHaveCount(0);
+  }
 });

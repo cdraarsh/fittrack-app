@@ -100,5 +100,11 @@ describe('outbox', () => {
     expect(classifyError({ message: 'x', code: 'P0001', status: 400 })).toBe('permanent');
     expect(classifyError({ message: 'dup', code: '23505', status: 409 })).toBe('permanent');
     expect(classifyError({ message: 'priv', code: '42501', status: 403 })).toBe('permanent');
+    // Transient right after a migration, or a parent row not synced yet.
+    expect(classifyError({ message: 'schema cache', code: 'PGRST205', status: 404 })).toBe('retry');
+    expect(classifyError({ message: 'column cache', code: 'PGRST204', status: 400 })).toBe('retry');
+    expect(classifyError({ message: 'pool', code: 'PGRST003', status: 504 })).toBe('retry');
+    expect(classifyError({ message: 'fk', code: '23503', status: 409 })).toBe('retry');
+    expect(classifyError({ message: 'bad filter', code: 'PGRST100', status: 400 })).toBe('permanent');
   });
 });

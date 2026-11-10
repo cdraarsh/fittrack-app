@@ -22,10 +22,10 @@ export function signJwt(payload: Record<string, unknown>, secret: string): strin
   return `${head}.${body}.${sig}`;
 }
 
-export function mintOwnerToken(now = Date.now(), secret = process.env.SUPABASE_JWT_SECRET): { token: string; expiresAt: number } {
+export function mintOwnerToken(now = Date.now(), secret = process.env.SUPABASE_JWT_SECRET): { token: string; expiresAt: number; expiresIn: number } {
   if (!secret) throw new TokenNotConfiguredError();
   const iat = Math.floor(now / 1000);
   const exp = iat + TOKEN_TTL_S;
   const token = signJwt({ sub: OWNER_ID, role: 'authenticated', aud: 'authenticated', iat, exp }, secret);
-  return { token, expiresAt: exp * 1000 };
+  return { token, expiresAt: exp * 1000, expiresIn: TOKEN_TTL_S };
 }

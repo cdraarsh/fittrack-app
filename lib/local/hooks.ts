@@ -9,7 +9,7 @@ import type { Exercise } from '@/lib/exercises/types';
 import type { ProgramSession, SessionExercise, SetLog } from '@/lib/program/types';
 import { ensureSettings, lastWeightFor, refreshProgress, seedExercises } from './actions';
 import { getDb, getMeta, setMeta } from './db';
-import { OUTBOX_EVENT } from './outbox';
+import { OUTBOX_EVENT, pendingCount } from './outbox';
 import { syncNow } from './sync';
 
 // ─── Sync status store ────────────────────────────────────────────────────────
@@ -118,7 +118,11 @@ export function useSyncEngine(): void {
       if (document.visibilityState === 'visible') void refreshProgress(getDb(), localUserId);
       void sync(); // flush on hide too: the OS may freeze us next
     };
-    const tick = setInterval(() => void refreshProgress(getDb(), localUserId), 60_000);
+    const tick = setInterval(() => {
+      void refreshProgress(getDb(), localUserId);
+      // Retry what a transient error left behind, without waiting for the next write.
+      if (navigator.onLine) void pendingCount(getDb()).then((n) => { if (n > 0) void sync(); });
+    }, 60_000);
     window.addEventListener(OUTBOX_EVENT, onOutbox);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
