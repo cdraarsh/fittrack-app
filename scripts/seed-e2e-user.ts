@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const USER_ID = process.env.E2E_TEST_USER_ID!;
+const USER_ID = process.env.E2E_TEST_USER_ID || process.env.NEXT_PUBLIC_OWNER_ID || 'owner';
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !USER_ID) {
   console.error('Missing env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, E2E_TEST_USER_ID');

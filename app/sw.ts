@@ -43,7 +43,7 @@ const serwist = new Serwist({
 });
 
 /**
- * Warm the app-shell cache with every app route (signed-in cookies go along),
+ * Warm the app-shell cache with every app route (no sign-in, so every route is cacheable),
  * so a route the user hasn't visited yet still opens in airplane mode.
  */
 async function warmAppShell(): Promise<void> {
@@ -52,7 +52,7 @@ async function warmAppShell(): Promise<void> {
     APP_ROUTES.map(async (path) => {
       try {
         const res = await fetch(path, { credentials: 'same-origin', redirect: 'follow' });
-        // Signed out → middleware redirects to sign-in: don't cache that as the shell.
+        // Don't cache error pages or redirects as the shell.
         if (res.ok && !res.redirected) await cache.put(path, res);
       } catch {
         /* offline: keep what we have */

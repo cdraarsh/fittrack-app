@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { OWNER_ID } from '@/lib/owner';
 import { GarminNotConfiguredError } from '@/lib/garmin/errors';
 import { runUserSync } from '@/lib/garmin/service';
 
@@ -7,10 +7,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-/** POST → "Sync now" for the signed-in user. */
+/** POST → "Sync now" for the owner. */
 export async function POST() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const result = await runUserSync(userId);
     const status =

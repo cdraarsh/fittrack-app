@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { OWNER_ID } from '@/lib/owner';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -18,8 +18,7 @@ function admin() {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
 
   const body = (await req.json()) as WebPushBody;
   if (!body?.endpoint || !body?.keys?.p256dh || !body?.keys?.auth) {
@@ -38,8 +37,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
   await admin().from('ft_push_subscriptions').delete().eq('user_id', userId);
   return NextResponse.json({ ok: true });
 }

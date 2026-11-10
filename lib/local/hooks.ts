@@ -1,9 +1,9 @@
 'use client';
 
-import { useAuth } from '@clerk/nextjs';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
+import { OWNER_ID } from '@/lib/owner';
 import { advance } from '@/lib/program/unlock';
 import type { Exercise } from '@/lib/exercises/types';
 import type { ProgramSession, SessionExercise, SetLog } from '@/lib/program/types';
@@ -11,7 +11,6 @@ import { ensureSettings, lastWeightFor, refreshProgress, seedExercises } from '.
 import { getDb, getMeta, setMeta } from './db';
 import { OUTBOX_EVENT } from './outbox';
 import { syncNow } from './sync';
-import { getCachedUserId, setCachedUserId } from './user';
 
 // ─── Sync status store ────────────────────────────────────────────────────────
 
@@ -42,17 +41,9 @@ export function requestSync(): Promise<void> {
 
 // ─── User ─────────────────────────────────────────────────────────────────────
 
-/**
- * Clerk user id, or the cached one while Clerk can't load (offline). Returns
- * undefined while still deciding.
- */
-export function useLocalUserId(): string | null | undefined {
-  const { isLoaded, userId } = useAuth();
-  const [cached, setCached] = useState<string | null | undefined>(undefined);
-  useEffect(() => setCached(getCachedUserId()), []);
-  if (isLoaded && userId) return userId;
-  if (isLoaded && !userId && typeof navigator !== 'undefined' && navigator.onLine) return null;
-  return cached;
+/** The single owner's id (no sign-in). Kept as a hook so callers stay unchanged. */
+export function useLocalUserId(): string {
+  return OWNER_ID;
 }
 
 // ─── Engine: run once in the app layout ───────────────────────────────────────
@@ -63,22 +54,9 @@ export function useLocalUserId(): string | null | undefined {
  * local writes (Safari has no Background Sync).
  */
 export function useSyncEngine(): void {
-  const { isLoaded, userId, getToken } = useAuth();
-  const localUserId = useLocalUserId();
-  const getTokenRef = useRef(getToken);
-  getTokenRef.current = getToken;
-  const client = useMemo(() => createSupabaseClient(() => getTokenRef.current().catch(() => null)), []);
-
-  // New user on this device → wipe the previous user's local copy.
-  useEffect(() => {
-    if (!isLoaded || !userId) return;
-    const prev = getCachedUserId();
-    if (prev && prev !== userId) {
-      const db = getDb();
-      void Promise.all(db.tables.filter((t) => t.name !== 'exercises').map((t) => t.clear()));
-    }
-    setCachedUserId(userId);
-  }, [isLoaded, userId]);
+  const userId = OWNER_ID;
+  const localUserId = userId;
+  const client = useMemo(() => createSupabaseClient(), []);
 
   const sync = useCallback(async () => {
     if (!userId || typeof navigator === 'undefined') return;

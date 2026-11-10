@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { OWNER_ID } from '@/lib/owner';
 import { GarminAuthError, GarminHttpError, GarminNotConfiguredError } from '@/lib/garmin/errors';
 import { connectGarmin, disconnectGarmin, getGarminStatus, resolveExpiry } from '@/lib/garmin/service';
 
@@ -15,8 +15,7 @@ function notConfigured(e: GarminNotConfiguredError) {
 
 /** GET → connection status (never returns the key). */
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     return NextResponse.json(await getGarminStatus(userId));
   } catch (e) {
@@ -27,8 +26,7 @@ export async function GET() {
 
 /** POST { apiKey, expiresAt? | expiresInDays? (30|90|180|365) } → test token, store encrypted. */
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
 
   let body: { apiKey?: unknown; expiresAt?: unknown; expiresInDays?: unknown };
   try {
@@ -62,8 +60,7 @@ export async function POST(req: NextRequest) {
 
 /** DELETE → remove the stored key. Synced activities/dailies are kept. */
 export async function DELETE() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     await disconnectGarmin(userId);
     return NextResponse.json({ connected: false });

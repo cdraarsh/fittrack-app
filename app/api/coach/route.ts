@@ -1,6 +1,6 @@
 // /api/coach — coach chat on Today.
 // GET  → recent messages + today's cap status.
-// POST { message } → streamed plain-text reply. Read-only tools, Clerk auth,
+// POST { message } → streamed plain-text reply. Read-only tools, single owner (no sign-in),
 // persisted to coach_messages, daily user-message cap enforced server-side.
 
 import { NextRequest, NextResponse } from 'next/server';

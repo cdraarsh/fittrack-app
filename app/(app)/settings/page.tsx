@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import Spinner from '@/components/app/Spinner';
 import GarminSection from '@/components/settings/GarminSection';
 import { toast } from '@/components/shared/Toast';
@@ -216,7 +215,6 @@ function SyncCard() {
 function NotificationsCard() {
   const [state, setState] = useState<'unsupported' | 'default' | 'granted' | 'denied'>('default');
   const [busy, setBusy] = useState(false);
-  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) setState('unsupported');
@@ -258,12 +256,12 @@ function NotificationsCard() {
         {state === 'unsupported' ? (
           <span className="text-xs text-text3">Not supported here</span>
         ) : state === 'granted' ? (
-          <button disabled={busy || !isSignedIn} onClick={() => void disable()} className="px-3 py-1.5 rounded-lg bg-bg3 border border-border text-sm">
+          <button disabled={busy} onClick={() => void disable()} className="px-3 py-1.5 rounded-lg bg-bg3 border border-border text-sm">
             Turn off
           </button>
         ) : (
           <button
-            disabled={busy || state === 'denied' || !isSignedIn}
+            disabled={busy || state === 'denied'}
             onClick={() => void enable()}
             className="px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-sm font-bold disabled:opacity-40"
           >

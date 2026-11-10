@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { UserButton } from '@clerk/nextjs';
 import { CalendarRange, CloudOff, History, RefreshCw, Settings2, Zap } from 'lucide-react';
 import { useLocalUserId, useSettings, useSyncEngine, useSyncStatus, useOutboxCounts } from '@/lib/local/hooks';
 import { useCueSetup } from '@/lib/audio/hooks';
@@ -53,7 +52,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           ) : outbox?.pending ? (
             <span className="text-[11px] text-text3">{outbox.pending} to sync</span>
           ) : null}
-          <UserButton appearance={{ variables: { colorPrimary: '#22c55e', colorBackground: '#161b24', colorText: '#f1f5f9' } }} />
         </div>
       </header>
 

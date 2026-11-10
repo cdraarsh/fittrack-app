@@ -3,4 +3,3 @@ export * from './outbox';
 export * from './actions';
 export * from './merge';
 export * from './sync';
-export * from './user';

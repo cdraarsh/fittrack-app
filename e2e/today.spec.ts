@@ -1,11 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { setupClerkTestingToken } from '@clerk/testing/playwright';
-
-test.use({ storageState: 'e2e/.auth/user.json' });
-
-test.beforeEach(async ({ page }) => {
-  await setupClerkTestingToken({ page });
-});
 
 test('Today shows the start button or the session that is up next', async ({ page }) => {
   await page.goto('/today');

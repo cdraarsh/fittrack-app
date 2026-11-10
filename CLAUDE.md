@@ -8,12 +8,14 @@ is complete. Logging works fully offline. Source of truth for scope:
 ## Stack
 
 - Next.js 15 App Router, React 19, TypeScript (strict), Tailwind 3
-- Clerk auth (`middleware.ts`); Supabase Postgres with RLS keyed to the Clerk
-  JWT `sub` via `public.requesting_user_id()`
+- No sign-in: single owner (`lib/owner.ts`, `OWNER_ID`). `/api/token` mints a
+  Supabase JWT (HS256, `SUPABASE_JWT_SECRET`) with `sub = OWNER_ID`, so RLS via
+  `public.requesting_user_id()` still applies. Protect a public deployment at
+  the edge (e.g. Vercel Deployment Protection).
 - Dexie (IndexedDB) local copy + outbox → Supabase (`lib/local`)
 - Serwist service worker (`app/sw.ts` → generated `public/sw.js`)
 - Vercel (hosting + Cron), web push (VAPID)
-- Vitest (+ fake-indexeddb, PGlite for SQL), Playwright + `@clerk/testing`
+- Vitest (+ fake-indexeddb, PGlite for SQL), Playwright
 
 ## Layout
 
@@ -30,7 +32,7 @@ lib/program/   templates, generate.ts (pure, deterministic), unlock.ts (state ma
 lib/exercises/ seed.ts (library source of truth), sql.ts (seed SQL generator)
 lib/local/     db.ts (Dexie), outbox.ts, actions.ts (all writes), sync.ts, merge.ts, hooks.ts
 lib/audio/     cues.ts (Web Audio + Audio Session), rest.ts (timestamp timer), wakeLock.ts
-lib/supabase.ts  browser client with the Clerk token
+lib/supabase.ts  browser client with the owner token from /api/token
 supabase/migrations/20261110000000_v2_core.sql  schema, RLS, triggers, complete_session()
 ```
 
@@ -75,13 +77,13 @@ npm run build && npm start   # production build; test offline/PWA here
 npx tsc --noEmit       # typecheck
 npx vitest run         # unit + SQL (PGlite) tests
 npm run db:seed:gen    # regenerate the exercise seed SQL from lib/exercises/seed.ts
-npm run test:e2e       # Playwright (needs Clerk test user env)
+npm run test:e2e       # Playwright
 ```
 
 ## Conventions
 
 - DB rows use snake_case column names end to end (`lib/program/types.ts`).
-- `user_id` is `text` = Clerk `sub`; every user table has RLS on
+- `user_id` is `text` = JWT `sub` (`OWNER_ID`); every user table has RLS on
   `requesting_user_id()`. New tables must do the same.
 - Pure logic (program, unlock, matcher, cue scheduling) lives in `lib/` with
   Vitest tests; UI stays thin.

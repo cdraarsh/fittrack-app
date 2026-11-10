@@ -20,3 +20,7 @@ public/sw.js
 public/sw.js.map
 public/swe-worker-*.js
 public/swe-worker-*.js.map
+
+
+# leftover Clerk local config from v1 (may hold secrets)
+/.clerk/

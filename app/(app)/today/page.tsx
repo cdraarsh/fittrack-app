@@ -39,7 +39,6 @@ export default function TodayPage() {
   const [starting, setStarting] = useState(false);
 
   if (userId === undefined || program === undefined || latest === undefined || !settings) return <Spinner />;
-  if (userId === null) return <p className="text-text2">Sign in to continue.</p>;
 
   async function start() {
     if (!userId) return;

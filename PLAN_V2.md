@@ -4,7 +4,7 @@ Source of truth for the v2 rebuild. Full version with diagrams: https://claude.a
 
 ## Goal and scope
 
-PWA-first rebuild on the existing Next.js 15 + Clerk + Supabase + Vercel skeleton. Five features only:
+PWA-first rebuild on the existing Next.js 15 + Supabase + Vercel skeleton (Clerk removed: no sign-in, single owner). Five features only:
 
 1. **Garmin Connect** — watch strength sets, cardio, sleep and recovery data flow in without retyping.
 2. **Data logging** — set-by-set logging that works offline and syncs later.
@@ -21,11 +21,11 @@ Work on a `v2` branch. Tag `v1.7.0` on main first.
 | Area | v1 today | v2 |
 | --- | --- | --- |
 | Framework | Next.js 15 App Router, React 19, TS, Tailwind | Keep |
-| Auth | Clerk + `middleware.ts` | Keep; protect new app routes |
-| DB client | `lib/supabase.ts` (Clerk JWT → Supabase) | Keep pattern; new schema |
+| Auth | Clerk + `middleware.ts` | Removed: app opens directly; `/api/token` mints a Supabase JWT for the single owner |
+| DB client | `lib/supabase.ts` (Clerk JWT → Supabase) | Keep pattern with owner JWT; new schema |
 | Hosting/jobs | Vercel + Cron (`vercel.json`) | Keep; cron runs Garmin sync |
 | Web push | `web-push` + VAPID + `/api/push/subscribe` | Keep web part only |
-| Tests/CI | Vitest, Playwright + `@clerk/testing`, Lighthouse CI, `qa.yml` | Keep |
+| Tests/CI | Vitest, Playwright, Lighthouse CI, `qa.yml` | Keep |
 | Service worker | hand-written `public/sw.js` (no offline pages) | Replace with Serwist; whole app shell offline |
 | App state | one context, saves whole-day JSON every keystroke | Local-first: Dexie (IndexedDB) + sync outbox |
 | Workout data | `ft_days` JSON per date, tied to weekday names | Normalized tables keyed by session number |
@@ -41,7 +41,7 @@ Rewrite `CLAUDE.md` / `AGENTS.md` (currently GitNexus boilerplate) for v2.
 Phone holds the working copy; server is backup + Garmin bridge.
 
 - Phone (installed PWA): Logger/Today UI → Dexie (IndexedDB) → sync outbox; Serwist caches app shell.
-- Supabase: Postgres + RLS (Clerk JWT `sub`), `complete_session()` enforces no-skip.
+- Supabase: Postgres + RLS (owner JWT `sub`), `complete_session()` enforces no-skip.
 - Vercel: Garmin sync job (cron + "Sync now"), insight/coach routes. Garmin key and AI keys never reach the browser.
 - Garmin: watch → Garmin Connect → Personal API (pull only).
 
@@ -140,7 +140,7 @@ One server-side agent reading a **stats pack**. Code computes every number; the 
 | `daily_insights` | user_id, date, text, stats_pack, model |
 | `coach_messages` | user_id, role, content, tool_calls, created_at |
 
-RLS on every user table keyed to Clerk `sub`. `complete_session(session_id)` Postgres function validates and unlocks; the client never sets `status` directly.
+RLS on every user table keyed to the JWT `sub` (single owner). `complete_session(session_id)` Postgres function validates and unlocks; the client never sets `status` directly.
 
 ## Build phases (each ends with a check)
 

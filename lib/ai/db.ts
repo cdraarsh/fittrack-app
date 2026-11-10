@@ -1,9 +1,10 @@
 // ─── Server-side Supabase client for AI routes ───────────────────────────────
-// Same pattern as lib/supabase.ts (Clerk session JWT injected per request, so
-// RLS via public.requesting_user_id() applies), kept separate so the AI track
+// Same pattern as lib/supabase.ts (owner JWT injected per request, so RLS via
+// public.requesting_user_id() applies), kept separate so the AI track
 // doesn't depend on that file's evolving shape. Server-only.
 
-import { auth } from '@clerk/nextjs/server';
+import { mintOwnerToken } from '@/lib/auth/supabaseToken';
+import { OWNER_ID } from '@/lib/owner';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export function createUserSupabase(getToken: () => Promise<string | null>): SupabaseClient {
@@ -23,9 +24,12 @@ export function createUserSupabase(getToken: () => Promise<string | null>): Supa
   });
 }
 
-/** Clerk-authenticated user + RLS-scoped Supabase client, or null if signed out. */
+/** The single owner + RLS-scoped Supabase client, or null if the token can't be minted. */
 export async function getAuthedSupabase(): Promise<{ userId: string; db: SupabaseClient } | null> {
-  const { userId, getToken } = await auth();
-  if (!userId) return null;
-  return { userId, db: createUserSupabase(() => getToken()) };
+  try {
+    mintOwnerToken();
+  } catch {
+    return null;
+  }
+  return { userId: OWNER_ID, db: createUserSupabase(async () => mintOwnerToken().token) };
 }

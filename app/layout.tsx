@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { ClerkProvider } from '@clerk/nextjs';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
 import './globals.css';
 
@@ -35,23 +34,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider
-      appearance={{
-        variables: {
-          colorPrimary: '#22c55e',
-          colorBackground: '#0e1117',
-          colorInputBackground: '#1e2532',
-          colorInputText: '#f1f5f9',
-          colorText: '#f1f5f9',
-          colorTextSecondary: '#94a3b8',
-          colorNeutral: '#94a3b8',
-          borderRadius: '10px',
-        },
-      }}
-    >
-      <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable}`}>
-        <body className="bg-bg min-h-screen font-sans">{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable}`}>
+      <body className="bg-bg min-h-screen font-sans">{children}</body>
+    </html>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import { Watch } from 'lucide-react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { toast } from '../shared/Toast';
@@ -33,17 +32,16 @@ const EXPIRY_OPTIONS = [30, 90, 180, 365] as const;
 const DAY = 86_400_000;
 
 export default function GarminSection() {
-  const { getToken, isSignedIn } = useAuth();
   const [status, setStatus] = useState<GarminStatus | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [busy, setBusy] = useState(false);
   const [review, setReview] = useState<ReviewActivity[]>([]);
   const keyRef = useRef<HTMLInputElement>(null);
   const [expires, setExpires] = useState<(typeof EXPIRY_OPTIONS)[number]>(365);
-  const db = useMemo(() => createSupabaseClient(() => getToken()), [getToken]);
+  const db = useMemo(() => createSupabaseClient(), []);
 
   const load = useCallback(async () => {
-    if (!isSignedIn || !navigator.onLine) return;
+    if (!navigator.onLine) return;
     try {
       const res = await fetch('/api/garmin/connect', { cache: 'no-store' });
       if (res.status === 503) return setNotConfigured(true);
@@ -58,7 +56,7 @@ export default function GarminSection() {
       .order('start_time', { ascending: false })
       .limit(20);
     setReview((data as ReviewActivity[] | null) ?? []);
-  }, [db, isSignedIn]);
+  }, [db]);
 
   useEffect(() => {
     void load();

@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@clerk/nextjs/server';
 
-export default async function HomePage() {
-  const { userId } = await auth();
-  redirect(userId ? '/today' : '/sign-in');
+export default function HomePage() {
+  redirect('/today');
 }
