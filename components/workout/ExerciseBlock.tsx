@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Lightbulb, ArrowLeftRight, Check, Circle, Trophy, Watch } from 'lucide-react';
 import { hitTopOfRange, roundToPlate } from '@/lib/program';
 import type { SessionBundleItem } from '@/lib/local/hooks';
@@ -44,6 +44,24 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   const prefill =
     lastWeight !== null ? (isDeload ? roundToPlate(lastWeight * 0.6) : lastWeight) : se.target_kg;
   const topOfRange = hitTopOfRange(se, logs, timed);
+
+  // Inputs are uncontrolled and keyed by index, so a save never remounts the
+  // row (that wiped the other field and closed the iPhone keyboard). Push saved
+  // values (e.g. watch sets, sync) into fields the user isn't editing.
+  const valueKey = logs.map((l) => `${l.set_index}:${l.weight_kg}:${l.reps}:${l.seconds}`).join('|') + `|${prefill}`;
+  useEffect(() => {
+    const show = (el: HTMLInputElement | null | undefined, val: number | null | undefined) => {
+      if (!el || el === document.activeElement) return;
+      const next = val === null || val === undefined ? '' : String(val);
+      if (el.value !== next) el.value = next;
+    };
+    for (let i = 0; i < se.sets; i++) {
+      const log = byIndex.get(i);
+      show(weightRefs.current[i], log?.weight_kg ?? (log ? null : prefill));
+      show(valueRefs.current[i], timed ? log?.seconds : log?.reps);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valueKey, se.sets, timed]);
 
   async function blurSave(i: number, field: 'weight_kg' | 'reps' | 'seconds', raw: string) {
     const log = byIndex.get(i);
@@ -126,7 +144,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
             const v = timed ? log?.seconds : log?.reps;
             const editable = mode === 'active' || (mode === 'complete' && done);
             return (
-              <React.Fragment key={`${i}:${log?.updated_at ?? ''}`}>
+              <React.Fragment key={i}>
                 <span className="text-xs text-text3 font-semibold text-center">
                   {i + 1}
                   {log?.source === 'watch' && <Watch size={9} className="inline ml-0.5 text-info" aria-label="from watch" />}

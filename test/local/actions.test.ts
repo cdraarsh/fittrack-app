@@ -84,6 +84,19 @@ describe('local actions', () => {
     expect(await statusOf()).toEqual(['complete', 'up_next', 'locked']);
   });
 
+  it('concurrent saves to the same set keep every field (blur then tick)', async () => {
+    const { ses } = await sessionExercises(1);
+    const target = { sessionExerciseId: ses[0].id, setIndex: 0 };
+    await Promise.all([
+      saveSet(db, U, { ...target, patch: { weight_kg: 40 } }),
+      saveSet(db, U, { ...target, patch: { reps: 9 } }),
+      saveSet(db, U, { ...target, patch: { done: true } }),
+    ]);
+    const logs = await db.set_logs.toArray();
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ weight_kg: 40, reps: 9, done: true });
+  });
+
   it('one set row per (exercise, index): edits coalesce into one queued upsert', async () => {
     const { ses } = await sessionExercises(1);
     await saveSet(db, U, { sessionExerciseId: ses[0].id, setIndex: 0, patch: { weight_kg: 40 } });

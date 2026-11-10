@@ -151,11 +151,27 @@ export type SetPatch = Partial<Pick<SetLog, 'weight_kg' | 'reps' | 'seconds' | '
  * Save one set (on tick or blur — never per keystroke). Refused for locked
  * sessions; on a complete session only done rows can be edited and never unticked.
  */
-export async function saveSet(
+// Set writes run one at a time: each is a read-modify-write of the same row
+// (and may advance the session), so two quick saves — blur on reps then tick,
+// or weight then reps — must not both start from the old row and drop a field.
+let setWriteQueue: Promise<unknown> = Promise.resolve();
+
+export function saveSet(
   db: FitDB,
   userId: string,
   args: { sessionExerciseId: string; setIndex: number; patch: SetPatch },
-  now = new Date(),
+  now?: Date,
+): Promise<SetLog> {
+  const run = setWriteQueue.then(() => saveSetNow(db, userId, args, now ?? new Date()));
+  setWriteQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function saveSetNow(
+  db: FitDB,
+  userId: string,
+  args: { sessionExerciseId: string; setIndex: number; patch: SetPatch },
+  now: Date,
 ): Promise<SetLog> {
   const se = await db.session_exercises.get(args.sessionExerciseId);
   if (!se) throw new LocalRuleError('not_found');

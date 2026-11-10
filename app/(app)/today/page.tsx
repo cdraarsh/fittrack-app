@@ -10,7 +10,7 @@ import SessionLogger, { ruleMessage } from '@/components/workout/SessionLogger';
 import { toast } from '@/components/shared/Toast';
 import { getDb } from '@/lib/local/db';
 import { saveBodyWeight, startProgram } from '@/lib/local/actions';
-import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, useProgramSessions, useProgress, useSettings } from '@/lib/local/hooks';
+import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, useProgramSessions, useProgress, useSettings, useSyncStatus } from '@/lib/local/hooks';
 import { addDays, localDate } from '@/lib/program';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -35,6 +35,7 @@ export default function TodayPage() {
   const sessions = useProgramSessions(program?.id);
   const tz = settings?.timezone ?? 'UTC';
   const progress = useProgress(sessions, settings?.unlock_rule ?? 'next_calendar_day', tz);
+  const sync = useSyncStatus();
   const everSynced = useLiveQuery(async () => !!(await getDb().meta.get('last_synced_at')), [], undefined);
   const [starting, setStarting] = useState(false);
 
@@ -55,7 +56,10 @@ export default function TodayPage() {
   // ── No active program: first run, or the last block is finished ──
   if (program === null) {
     const finished = latest?.status === 'complete';
-    const canStart = everSynced || (typeof navigator !== 'undefined' && !navigator.onLine);
+    // Wait for the first pull so we don't start a second program, unless the
+    // server can't be reached (offline, or the first sync failed).
+    const canStart =
+      everSynced || sync.state === 'offline' || sync.state === 'error' || (typeof navigator !== 'undefined' && !navigator.onLine);
     return (
       <div className="space-y-4">
         <div className="bg-bg2 border border-border rounded-card p-5 text-center">
