@@ -91,6 +91,7 @@ Tip for users: the FIT file keeps only what the watch recorded; build each day t
 - `navigator.storage.persist()` on first launch.
 - Recorded: set (weight kg, reps or seconds, done, optional RPE, logged at, source app/watch); session (started/completed at, cardio, notes, swaps); day (bodyweight, readiness snapshot).
 - Logger: prefill last weight for the exercise, reps placeholder = target range; tick saves + starts rest timer (save on tick/blur, not each keystroke); +2.5 kg hint when all sets hit top of range; swap within swap group counts; completed session editable for typos but done sets can't be unticked.
+- Sound cues on set changes (set ticked, rest 3-2-1, rest over, next exercise, session complete) that must be heard over music playing on the iPhone: Web Audio tones, `navigator.audioSession.type = 'transient'` during a cue to duck the music, back to `'ambient'` after (never pause it). Timestamp-based rest timer + Screen Wake Lock while a session is in progress (a locked PWA can't play sounds on time). Settings: on/off, volume, test sound. Verify ducking and silent-switch behaviour on a real iPhone.
 
 ## Feature 3: Suggested days, locked
 
