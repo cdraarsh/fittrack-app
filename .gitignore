@@ -14,3 +14,9 @@ test-results/
 # Local MCP config
 .mcp.json
 .gitnexus
+
+# Serwist (generated at build from app/sw.ts)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/swe-worker-*.js.map
