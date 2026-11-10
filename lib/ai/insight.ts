@@ -69,7 +69,7 @@ export async function getDailyInsight(deps: InsightDeps): Promise<InsightResult>
       model,
       system: INSIGHT_SYSTEM_PROMPT,
       prompt: buildInsightPrompt(pack),
-      maxOutputTokens: 600, // reasoning models spend part of this before the text
+      maxOutputTokens: 2000, // reasoning models (gpt-oss, Nemotron) spend most of this before the text
       maxRetries: 0,
     });
     text = clampLines(res.text);

@@ -26,7 +26,7 @@ describe('getProviderChain', () => {
   it('orders Groq then OpenRouter and skips missing/blank keys', () => {
     expect(getProviderChain({ GROQ_API_KEY: 'g', OPENROUTER_API_KEY: 'o' }, fakeFactories).map(e => e.label)).toEqual([
       'groq:openai/gpt-oss-120b',
-      'openrouter:google/gemma-4-31b-it:free',
+      'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free',
     ]);
     expect(getProviderChain({ GROQ_API_KEY: '  ', OPENROUTER_API_KEY: 'o' }, fakeFactories).map(e => e.id)).toEqual([
       'openrouter',
@@ -51,7 +51,7 @@ describe('getProviderChain', () => {
     const chain = getProviderChain({ GROQ_API_KEY: 'g', OPENROUTER_API_KEY: 'o', GOOGLE_GENERATIVE_AI_API_KEY: 'x', AI_ENABLE_GEMINI: 'true' });
     expect(chain.map(e => [e.model.specificationVersion, e.model.modelId])).toEqual([
       ['v3', 'openai/gpt-oss-120b'],
-      ['v3', 'google/gemma-4-31b-it:free'],
+      ['v3', 'nvidia/nemotron-3-ultra-550b-a55b:free'],
       ['v3', 'gemini-2.5-flash-lite'],
     ]);
   });

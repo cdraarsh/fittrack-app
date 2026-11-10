@@ -119,7 +119,7 @@ One server-side agent reading a **stats pack**. Code computes every number; the 
 - Coach: chat on Today (rebuild v1 `CoachCard` + `lib/aiCoach.ts` streaming on the Vercel AI SDK). Read-only tools: exercise history, session sets, Garmin dailies range, bodyweight trend. May suggest swaps/deloads; cannot skip/unlock sessions or edit logs. Stored in `coach_messages`; daily message cap in Settings.
 - Provider chain (switch on 429):
   1. Groq `openai/gpt-oss-120b` — free 30 RPM, 1K RPD, 8K TPM, 200K TPD; no training. Default. (`@ai-sdk/groq`, `GROQ_API_KEY`)
-  2. OpenRouter free models e.g. `google/gemma-4-31b-it:free` — 20 RPM, 50/day (1K/day after $10 credits); disable training in settings. (`OPENROUTER_API_KEY`)
+  2. OpenRouter free models e.g. `nvidia/nemotron-3-ultra-550b-a55b:free` — 20 RPM, 50/day (1K/day after $10 credits); disable training in settings. (`OPENROUTER_API_KEY`)
   3. Gemini Flash-Lite/Flash free — last resort or off: free-tier prompts used to improve Google products and may be human-reviewed outside EEA/UK/CH. (`GOOGLE_GENERATIVE_AI_API_KEY`)
 - Verify tool calling with gpt-oss-120b on Groq free tier in Phase 0.
 

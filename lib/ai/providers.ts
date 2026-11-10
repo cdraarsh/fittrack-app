@@ -26,7 +26,7 @@ export interface ProviderEntry {
 
 export const DEFAULT_MODELS: Record<ProviderId, string> = {
   groq: 'openai/gpt-oss-120b',
-  openrouter: 'google/gemma-4-31b-it:free',
+  openrouter: 'nvidia/nemotron-3-ultra-550b-a55b:free',
   gemini: 'gemini-2.5-flash-lite',
 };
 
