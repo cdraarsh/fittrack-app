@@ -8,6 +8,7 @@ import {
   lastWeightFor,
   LocalRuleError,
   refreshProgress,
+  saveBodyWeight,
   saveSet,
   seedExercises,
   startProgram,
@@ -166,5 +167,29 @@ describe('mergeSetLog', () => {
     const empty = { ...base, weight_kg: null, reps: null, done: false };
     const watch = { ...base, weight_kg: 50, reps: 12, source: 'watch' as const, updated_at: '2026-11-10T08:00:00Z' };
     expect(mergeSetLog(empty, watch)).toMatchObject({ weight_kg: 50, reps: 12, done: true, source: 'watch' });
+  });
+});
+
+describe('local actions (more)', () => {
+  it('immediate rule unlocks right away; a rule change re-evaluates', async () => {
+    const s1 = await doAllSets(1, at('2026-11-10T05:00:00Z'));
+    await completeSession(db, U, s1.id, at('2026-11-10T06:00:00Z'));
+    expect(await statusOf()).toEqual(['complete', 'locked', 'locked']);
+    await updateSettings(db, U, { unlock_rule: 'immediate' }, at('2026-11-10T06:01:00Z'));
+    expect(await statusOf()).toEqual(['complete', 'up_next', 'locked']);
+  });
+
+  it('body weight upserts per date (one queued op per day)', async () => {
+    await saveBodyWeight(db, U, '2026-11-10', 80.4);
+    await saveBodyWeight(db, U, '2026-11-10', 80.2);
+    expect((await db.body_weights.get([U, '2026-11-10']))!.kg).toBe(80.2);
+    expect((await db.outbox.toArray()).filter((o) => o.key === 'body_weights:2026-11-10')).toHaveLength(1);
+  });
+
+  it('does not pull while ops are still pending (offline)', async () => {
+    const { client, calls } = fakeSupabase({ respond: () => ({ error: { message: 'offline' }, status: 0 }) });
+    const r = await syncNow(db, client, U);
+    expect(r).toMatchObject({ blocked: true, pulled: false });
+    expect(calls.some((c) => c.kind === 'select')).toBe(false);
   });
 });
