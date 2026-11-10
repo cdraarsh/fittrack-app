@@ -19,6 +19,11 @@ const L = (n: number, i: number) => `00000000-0000-4000-8000-0000000003${n}${i}`
 
 let db: PGlite;
 
+// What PostgREST's upsert generates: every payload column in the DO UPDATE SET list.
+const ALL_SET_LOG_COLS = ['id', 'session_exercise_id', 'user_id', 'set_index', 'weight_kg', 'reps', 'done', 'updated_at']
+  .map((c) => `${c} = excluded.${c}`)
+  .join(', ');
+
 async function as(sub: string) {
   await db.exec(`reset role; set request.jwt.claims = '${JSON.stringify({ sub, role: 'authenticated' })}'; set role authenticated;`);
 }
@@ -41,7 +46,7 @@ async function fails(sql: string): Promise<string> {
 }
 const statuses = async () => (await rows<{ status: string }>(`select status from program_sessions order by seq`)).map((r) => r.status);
 const logSet = (n: number, i: number, extra = '') =>
-  `insert into set_logs (id,session_exercise_id,user_id,set_index,weight_kg,reps,done${extra ? ',updated_at' : ''}) values ('${L(n, i)}','${E(n)}','u1',${i},40,10,true${extra ? `,'${extra}'` : ''}) on conflict (id) do update set reps = excluded.reps, done = excluded.done, updated_at = excluded.updated_at`;
+  `insert into set_logs (id,session_exercise_id,user_id,set_index,weight_kg,reps,done${extra ? ',updated_at' : ''}) values ('${L(n, i)}','${E(n)}','u1',${i},40,10,true${extra ? `,'${extra}'` : ''}) on conflict (id) do update set ${ALL_SET_LOG_COLS}`;
 
 beforeAll(async () => {
   db = new PGlite();

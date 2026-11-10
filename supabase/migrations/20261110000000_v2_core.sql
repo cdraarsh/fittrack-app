@@ -542,15 +542,15 @@ create policy body_weights_delete_own on public.body_weights for delete to authe
 -- Column privileges: clients never touch status / unlock / completion columns.
 grant select, insert on public.user_settings, public.programs, public.program_sessions,
   public.session_exercises, public.set_logs, public.body_weights to authenticated;
-grant update (preferred_days, units, timezone, unlock_rule, sound_enabled, sound_volume, coach_daily_cap, updated_at)
-  on public.user_settings to authenticated;
+-- user_settings / set_logs / body_weights: full-row UPDATE so PostgREST upserts
+-- (ON CONFLICT DO UPDATE SET <every column>) work; identity columns are pinned
+-- by RLS (user_id) and the set_logs guard (session_exercise_id, set_index).
+grant update on public.user_settings, public.set_logs, public.body_weights to authenticated;
 grant update (name, updated_at) on public.programs to authenticated;
 grant update (cardio_done, cardio_duration_s, cardio_avg_hr, notes, updated_at)
   on public.program_sessions to authenticated;
 grant update (exercise_id, updated_at) on public.session_exercises to authenticated;
-grant update (weight_kg, reps, seconds, rpe, done, source, garmin_activity_id, logged_at, updated_at)
-  on public.set_logs to authenticated;
-grant update (kg, source, updated_at), delete on public.body_weights to authenticated;
+grant delete on public.body_weights to authenticated;
 
 -- Functions: only the two public entry points are callable by clients.
 revoke execute on function public._refresh_unlocks(text) from public, anon, authenticated;
