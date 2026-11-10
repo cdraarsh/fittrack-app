@@ -19,15 +19,11 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: 'FitTrack — Stop Winging It. Follow a Plan That Works.',
-  description: 'A free 16-week strength program with automatic calorie targets, daily workout tracking, and progress analytics. Set up in 2 minutes. No download needed.',
+  title: 'FitTrack',
+  description: 'A numbered strength program that works offline: log every set, and the next session unlocks when this one is done.',
   manifest: '/manifest.json',
+  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'FitTrack' },
-  openGraph: {
-    title: 'FitTrack — Stop Winging It. Follow a Plan That Works.',
-    description: 'Free 16-week strength program with built-in nutrition targets, PR tracking, and progress analytics.',
-    type: 'website',
-  },
 };
 
 export const viewport: Viewport = {
