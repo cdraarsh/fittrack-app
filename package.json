@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@clerk/testing": "^2.0.11",
+    "@electric-sql/pglite": "^0.5.16",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
