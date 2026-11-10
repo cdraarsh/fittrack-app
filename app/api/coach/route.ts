@@ -1,75 +1,140 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { streamText } from 'ai';
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { auth } from '@clerk/nextjs/server';
-import { COACH_SYSTEM_PROMPT, buildCoachUserMessage } from '@/lib/aiCoach';
-import type { CoachContext } from '@/lib/aiCoach';
+// /api/coach — coach chat on Today.
+// GET  → recent messages + today's cap status.
+// POST { message } → streamed plain-text reply. Read-only tools, Clerk auth,
+// persisted to coach_messages, daily user-message cap enforced server-side.
 
+import { NextRequest, NextResponse } from 'next/server';
+import { stepCountIs, streamText } from 'ai';
+import { getAuthedSupabase } from '@/lib/ai/db';
+import {
+  COACH_HISTORY_LIMIT,
+  MAX_COACH_MESSAGE_CHARS,
+  checkDailyCap,
+  countUserMessagesOn,
+  resolveDailyCap,
+  toModelHistory,
+} from '@/lib/ai/coach';
+import {
+  createCoachDataSource,
+  insertCoachMessage,
+  listCoachMessages,
+  loadStatsInput,
+  loadUserSettings,
+} from '@/lib/ai/loader';
+import { buildCoachSystem } from '@/lib/ai/prompts';
+import { createFallbackModel, getProviderChain } from '@/lib/ai/providers';
+import { ruleBasedInsight } from '@/lib/ai/rules';
+import { buildStatsPack, localDate } from '@/lib/ai/stats';
+import { createCoachTools } from '@/lib/ai/tools';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const MAX_TURNS = 3;
+const NO_STORE = { 'Cache-Control': 'private, no-store' };
+
+async function capStatus(db: SupabaseClient, userId: string) {
+  const settings = await loadUserSettings(db, userId);
+  const tz = settings?.timezone;
+  const today = localDate(new Date(), tz);
+  // 36h window covers "today" in any timezone; the exact day is filtered in code.
+  const sinceIso = new Date(Date.now() - 36 * 3600_000).toISOString();
+  const recent = await listCoachMessages(db, userId, { sinceIso, limit: 500 });
+  const cap = checkDailyCap(countUserMessagesOn(recent, today, tz), resolveDailyCap(settings));
+  return { today, cap };
+}
+
+export async function GET() {
+  const authed = await getAuthedSupabase();
+  if (!authed) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { userId, db } = authed;
+  try {
+    const [{ cap }, messages] = await Promise.all([capStatus(db, userId), listCoachMessages(db, userId, { limit: 30 })]);
+    return NextResponse.json(
+      {
+        messages: messages.map(m => ({ id: m.id, role: m.role, content: m.content, created_at: m.created_at })),
+        ...cap,
+        available: getProviderChain().length > 0,
+      },
+      { headers: NO_STORE },
+    );
+  } catch (err) {
+    console.error('[coach] GET error:', err);
+    return NextResponse.json({ error: 'Could not load coach history' }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
+  const authed = await getAuthedSupabase();
+  if (!authed) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { userId, db } = authed;
+
+  const body = (await req.json().catch(() => null)) as { message?: unknown } | null;
+  const message = typeof body?.message === 'string' ? body.message.trim() : '';
+  if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+  if (message.length > MAX_COACH_MESSAGE_CHARS) {
+    return NextResponse.json({ error: `Keep it under ${MAX_COACH_MESSAGE_CHARS} characters` }, { status: 400 });
+  }
+
   try {
-    // Auth — never trust userId from the request body
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json() as {
-      message: string;
-      turnCount: number;
-      context: CoachContext;
-    };
-
-    const { message, turnCount, context } = body;
-
-    // Server-side turn enforcement (client also enforces for UX)
-    if (turnCount >= MAX_TURNS) {
+    const { today, cap } = await capStatus(db, userId);
+    if (!cap.allowed) {
       return NextResponse.json(
-        { error: 'Session limit reached. Come back tomorrow.' },
-        { status: 429 }
+        { error: `Daily coach limit reached (${cap.cap}). Back tomorrow.`, ...cap },
+        { status: 429, headers: NO_STORE },
       );
     }
 
-    if (!message?.trim()) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    const pack = buildStatsPack(await loadStatsInput(db, userId, today));
+    const providers = getProviderChain();
+    if (providers.length === 0) {
+      // No key configured: answer with the rule-based summary; not persisted or counted.
+      const text = `The coach is offline right now (no AI provider configured). Today's summary:\n${ruleBasedInsight(pack)}`;
+      return new Response(text, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'x-coach-fallback': 'no-provider', ...NO_STORE },
+      });
     }
 
-    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const history = toModelHistory(await listCoachMessages(db, userId, { limit: COACH_HISTORY_LIMIT - 1 }));
+    await insertCoachMessage(db, userId, { role: 'user', content: message });
+
+    const model = createFallbackModel(providers, {
+      onFallback: (label, e) => console.warn(`[coach] ${label} failed, falling back:`, e instanceof Error ? e.message : e),
+    });
 
     const result = streamText({
-      model: anthropic('claude-sonnet-4-6'),
-      messages: [
-        {
-          role: 'system',
-          // Static portion cached — pays 0.1x on repeated calls
-          content: COACH_SYSTEM_PROMPT,
-          providerOptions: {
-            anthropic: { cacheControl: { type: 'ephemeral' } },
-          },
-        },
-        {
-          role: 'user',
-          content: buildCoachUserMessage(message, context),
-        },
-      ],
-      maxOutputTokens: 300,
+      model,
+      system: buildCoachSystem(pack),
+      messages: [...history, { role: 'user', content: message }],
+      tools: createCoachTools(userId, createCoachDataSource(db, today)),
+      stopWhen: stepCountIs(5),
+      maxRetries: 0,
+      maxOutputTokens: 1200,
       onError({ error }) {
         console.error('[coach] stream error:', error);
       },
-      onFinish({ usage }) {
-        console.log('[coach] finish', { userId, turnCount, usage });
+      async onFinish({ steps }) {
+        const text = steps.map(s => s.text).join('').trim();
+        if (!text) return;
+        const toolCalls = steps.flatMap(s => s.toolCalls.map(c => ({ toolName: c.toolName, input: c.input })));
+        try {
+          await insertCoachMessage(db, userId, {
+            role: 'assistant',
+            content: text.slice(0, 8000),
+            tool_calls: toolCalls.length ? { model: model.lastUsed, calls: toolCalls } : { model: model.lastUsed },
+          });
+        } catch (err) {
+          console.error('[coach] persist assistant failed:', err);
+        }
       },
     });
 
-    return result.toTextStreamResponse();
+    return result.toTextStreamResponse({
+      headers: { 'x-coach-remaining': String(cap.remaining - 1), ...NO_STORE },
+    });
   } catch (err) {
-    console.error('[coach] error:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Something went wrong' },
-      { status: 500 }
-    );
+    console.error('[coach] POST error:', err);
+    return NextResponse.json({ error: 'Coach is unavailable right now' }, { status: 500 });
   }
 }
