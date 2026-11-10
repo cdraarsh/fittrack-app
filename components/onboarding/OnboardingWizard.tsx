@@ -5,8 +5,14 @@ import { useApp } from '@/lib/store';
 import { DAYS, DEFAULT_GYM_DAYS } from '@/lib/constants';
 import { computeTargetsFromTDEE, dk } from '@/lib/utils';
 import { toast } from '../shared/Toast';
-import { generateAIPlan } from '@/lib/aiPlan';
 import type { UserProfile, OnboardingProfile, AIPlan } from '@/lib/types';
+
+// v2: lib/aiPlan.ts and /api/generate-plan were removed by the AI track. This
+// v1 wizard is being replaced by the foundation track; until then the AI step
+// fails fast and the existing "Skip → Use TDEE" path is used.
+async function generateAIPlan(_profile: OnboardingProfile, _onPartial?: (p: Partial<AIPlan>) => void): Promise<AIPlan> {
+  throw new Error('AI plan generation is not available in v2. Use TDEE instead.');
+}
 
 type Mode = 'auto' | 'manual';
 type Goal = UserProfile['goal'];

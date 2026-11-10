@@ -18,7 +18,6 @@ import FridayCheckIn from '../checkin/FridayCheckIn';
 import CoachNotes from '../notes/CoachNotes';
 import RecoveryPanel from '../recovery/RecoveryPanel';
 import CoachCard from '../coach/CoachCard';
-import type { CoachTrigger, CoachContext } from '@/lib/aiCoach';
 
 export default function TodayTab() {
   const { settings, getDayData, saveDayData, dayCache, weightCache, setCurrentTab } = useApp();
@@ -39,75 +38,6 @@ export default function TodayTab() {
   const workoutMap = getWorkoutMap(settings);
   const wo         = workoutMap[todayName];
   const water   = data.check?.water ?? 0;
-
-  // ─── Coach trigger evaluation ──────────────────────────────────────────────
-  const hour = today.getHours();
-
-  // missed_workout: gym day + no sets logged + past 9pm
-  const hasAnySets = wo
-    ? wo.exercises.some(ex => (data.wo?.[ex.id]?.sets ?? []).some(s => s?.done))
-    : false;
-  const isMissedWorkout = isGymDay && !hasAnySets && hour >= 21;
-
-  // end_of_week: Sunday + at least 1 workout done this week
-  const recentKeys = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today); d.setDate(d.getDate() - i); return dk(d);
-  });
-  const sessionsThisWeek = recentKeys.filter(k => {
-    const dayData = dayCache[k];
-    if (!dayData?.wo) return false;
-    const wm = getWorkoutMap(settings);
-    const dayName = DAYS[new Date(k).getDay()];
-    return wm[dayName]?.exercises.some(ex =>
-      (dayData.wo?.[ex.id]?.sets ?? []).some(s => s?.done)
-    );
-  }).length;
-  const isEndOfWeek = isSunday && sessionsThisWeek >= 1;
-
-  // phase_transition: only on the first day of the week that crosses a phase boundary
-  // Without the day-of-week check, the card would appear all 7 days of the transition week.
-  const prevWeekNum = Math.max(1, weekNum - 1);
-  const prevPct = (prevWeekNum - 1) / totalWeeks;
-  const curPct  = (weekNum - 1) / totalWeeks;
-  const programStartDayOfWeek = settings ? new Date(settings.startDate).getDay() : -1;
-  const isPhaseTransition =
-    weekNum > 1 &&
-    Math.floor(prevPct / 0.25) < Math.floor(curPct / 0.25) &&
-    today.getDay() === programStartDayOfWeek;
-
-  // calorie_streak_broken: 3+ consecutive days with meals logged, 0 today, past 7pm
-  const hasLogged3Days = recentKeys.slice(1, 4).every(k => (dayCache[k]?.meals?.length ?? 0) > 0);
-  const isCalorieStreakBroken = hasLogged3Days && meals.length === 0 && hour >= 19;
-
-  const coachTrigger: CoachTrigger | null =
-    isMissedWorkout      ? 'missed_workout'        :
-    isEndOfWeek          ? 'end_of_week'            :
-    isPhaseTransition    ? 'phase_transition'       :
-    isCalorieStreakBroken ? 'calorie_streak_broken'  :
-    null;
-
-  // Context object passed to the coach API
-  const gymDayCalTarget = getTargets(settings, true).calories;
-  const avgCalsThisWeek = recentKeys.slice(0, 7).reduce((sum, k) => {
-    const m = dayCache[k]?.meals ?? [];
-    return sum + m.reduce((s, e) => s + e.calories, 0);
-  }, 0) / 7;
-  const completionRate = totalWeeks > 0
-    ? Math.round((sessionsThisWeek / Math.max(1, settings?.gymDays.length ?? 3)) * 100)
-    : 0;
-
-  const coachContext: CoachContext = {
-    name:           settings?.name ?? 'there',
-    weekNum,
-    totalWeeks,
-    phase:          phase.phase,
-    completionRate: Math.min(100, completionRate),
-    avgCals:        Math.round(avgCalsThisWeek),
-    targetCals:     gymDayCalTarget,
-    isGymDay,
-    trigger:        coachTrigger ?? 'user_initiated',
-  };
-  // ──────────────────────────────────────────────────────────────────────────
 
   async function setWater(n: number) {
     const cur = data.check?.water ?? 0;
@@ -166,7 +96,7 @@ export default function TodayTab() {
       )}
 
       {/* AI Coach */}
-      {coachTrigger && <CoachCard trigger={coachTrigger} context={coachContext} />}
+      <CoachCard />
 
       {/* Targets */}
       <div className="bg-bg1 border border-border rounded-card p-4 mb-3">

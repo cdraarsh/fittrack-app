@@ -15,9 +15,10 @@
     "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.67",
-    "@ai-sdk/xai": "^3.0.79",
-    "@anthropic-ai/sdk": "^0.82.0",
+    "@ai-sdk/google": "^3.0.143",
+    "@ai-sdk/groq": "^3.0.82",
+    "@ai-sdk/openai-compatible": "^2.0.92",
+    "@ai-sdk/provider": "^3.0.19",
     "@capacitor/android": "^8.3.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/cli": "^8.3.0",
@@ -39,7 +40,8 @@
     "react-dom": "^19.0.0",
     "require-in-the-middle": "^8.0.1",
     "tailwind-merge": "^2.5.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@clerk/testing": "^2.0.11",
