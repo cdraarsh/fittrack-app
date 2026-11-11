@@ -37,3 +37,9 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* iOS zooms into inputs under 16px on focus. Keep pinch-zoom allowed
+   (no maximum-scale) and avoid the focus zoom instead. */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea { font-size: 16px; }
+}
