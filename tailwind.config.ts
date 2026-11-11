@@ -20,7 +20,7 @@ const config: Config = {
         'energy-dim': 'rgba(249,115,22,0.12)',
         text1:   '#f1f5f9',
         text2:   '#94a3b8',
-        text3:   '#64748b',
+        text3:   '#8090a5', // ≥4.5:1 on every bg token (WCAG AA)
         danger:  '#ef4444',
         warn:    '#f59e0b',
         info:    '#60a5fa',

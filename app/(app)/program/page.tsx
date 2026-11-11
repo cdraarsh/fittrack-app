@@ -22,7 +22,7 @@ export default function ProgramPage() {
   if (!program || !userId) {
     return (
       <p className="text-text2 text-sm">
-        No program running. <Link href="/today" className="text-accent">Start one on Today</Link>.
+        No program running. <Link href="/today" className="text-accent underline underline-offset-2">Start one on Today</Link>.
       </p>
     );
   }
