@@ -6,20 +6,6 @@ afterEach(() => {
   cleanup();
 });
 
-// Mock Clerk — components that import from @clerk/nextjs get no-op versions.
-vi.mock('@clerk/nextjs', () => ({
-  useUser: () => ({
-    user: { id: 'test-user', firstName: 'Test' },
-    isLoaded: true,
-    isSignedIn: true,
-  }),
-  useAuth: () => ({ userId: 'test-user', isLoaded: true, isSignedIn: true }),
-  UserButton: () => null,
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
-  SignIn: () => null,
-  SignUp: () => null,
-}));
-
 // Mock Supabase client — tests that need DB behavior should override this per-test.
 vi.mock('@/lib/supabase', () => {
   const chain = {
