@@ -75,16 +75,15 @@ self.addEventListener('message', (event) => {
 
 // ─── Web push (kept from v1) ──────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
   // Always show something: iOS can drop a push subscription after "silent"
   // pushes, so a malformed payload (null, a bare string) still notifies.
   let payload: { title?: string; body?: string; tag?: string; url?: string } = {};
   try {
-    const parsed: unknown = event.data.json();
+    const parsed: unknown = event.data ? event.data.json() : null;
     if (parsed && typeof parsed === 'object') payload = parsed as typeof payload;
     else if (typeof parsed === 'string') payload = { body: parsed };
   } catch {
-    payload = { body: event.data.text() };
+    payload = { body: event.data?.text() };
   }
   const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.slice(0, max) : undefined);
   payload = {
@@ -113,7 +112,8 @@ self.addEventListener('notificationclick', (event) => {
       const target = url.startsWith('/') ? url : '/today';
       for (const c of list) {
         const w = c as WindowClient;
-        if ('focus' in w) return (w.url.endsWith(target) ? Promise.resolve(w) : w.navigate(target).catch(() => w)).then((x) => (x ?? w).focus());
+        // Focus first (inside the click's user activation), then move to the page.
+        if ('focus' in w) return w.focus().then((f) => (f.url.endsWith(target) ? f : f.navigate(target).catch(() => f)));
       }
       return self.clients.openWindow(target);
     }),

@@ -47,7 +47,12 @@ export function hitTopOfRange(
   isTimed: boolean,
 ): boolean {
   if (isTimed || !allAtTop(se, logs, false)) return false;
-  return logs.some((l) => l.session_exercise_id === se.id && l.done && (l.weight_kg ?? 0) > 0);
+  // Loaded work: every prescribed set carries weight (extra sets don't count).
+  for (let i = 0; i < se.sets; i++) {
+    const l = logs.find((x) => x.session_exercise_id === se.id && x.set_index === i);
+    if (!((l?.weight_kg ?? 0) > 0)) return false;
+  }
+  return true;
 }
 
 /** What to progress next time, matched to the kind of exercise; null when not earned yet. */

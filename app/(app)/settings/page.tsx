@@ -144,10 +144,10 @@ function SettingsForm({ userId, settings }: { userId: string; settings: UserSett
       <Card title="AI coach">
         <Row label="Daily message cap" hint="1–100 a day. Empty = the maximum (100).">
           <input
-            type="number"
-            min={1}
-            max={100}
+            // text + numeric keypad: a number field reports "" for junk like "1e", indistinguishable from empty.
+            type="text"
             inputMode="numeric"
+            pattern="[0-9]*"
             defaultValue={settings.coach_daily_cap ?? ''}
             onBlur={(e) => {
               const raw = e.target.value.trim();
@@ -155,7 +155,7 @@ function SettingsForm({ userId, settings }: { userId: string; settings: UserSett
                 if (settings.coach_daily_cap !== null) save({ coach_daily_cap: null });
                 return;
               }
-              const n = Number(raw);
+              const n = /^\d+$/.test(raw) ? Number(raw) : NaN;
               // Junk or out of range never silently turns the coach off: put the old value back.
               if (!Number.isInteger(n) || n < 1 || n > 100) {
                 e.target.value = settings.coach_daily_cap === null ? '' : String(settings.coach_daily_cap);
@@ -263,11 +263,25 @@ function FailedList({ failed }: { failed: OutboxOp[] }) {
   );
 }
 
+function sameKey(buf: ArrayBuffer | null, b64url: string): boolean {
+  if (!buf) return true; // unknown (older browsers): keep it
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (const x of bytes) bin += String.fromCharCode(x);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') === b64url.replace(/=+$/, '');
+}
+
+/** navigator.serviceWorker.ready never settles when no worker is active (dev, failed registration, private windows). */
+async function swReady(ms = 1000): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) return null;
+  return Promise.race([navigator.serviceWorker.ready, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
+}
+
 function NotificationsCard() {
   // On/off comes from the actual push subscription, not the permission: after
   // "Turn off" the permission stays granted, and a failed subscribe or save
   // must not show reminders as on.
-  type State = 'loading' | 'unsupported' | 'denied' | 'off' | 'on';
+  type State = 'loading' | 'unsupported' | 'no-worker' | 'denied' | 'off' | 'on';
   const [state, setState] = useState<State>('loading');
   const [busy, setBusy] = useState(false);
 
@@ -281,7 +295,11 @@ function NotificationsCard() {
       return;
     }
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await swReady();
+      if (!reg) {
+        setState('no-worker');
+        return;
+      }
       if (!reg.pushManager) {
         setState('unsupported');
         return;
@@ -309,8 +327,19 @@ function NotificationsCard() {
         toast('Reminders aren’t set up on the server yet');
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
+      const reg = await swReady();
+      if (!reg) {
+        toast('The app’s background worker isn’t running — reopen the app and try again');
+        return;
+      }
+      // Re-subscribe if an old subscription was made with a different server key
+      // (pushes to it would fail with 403 forever).
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && !sameKey(sub.options?.applicationServerKey ?? null, key)) {
+        await sub.unsubscribe().catch(() => false);
+        sub = null;
+      }
+      sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
       const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
       if (!res.ok) {
         await sub.unsubscribe().catch(() => false); // don't look "on" when the server doesn't know
@@ -329,8 +358,8 @@ function NotificationsCard() {
   async function disable() {
     setBusy(true);
     try {
-      const reg = await navigator.serviceWorker.ready;
-      await (await reg.pushManager.getSubscription())?.unsubscribe();
+      const reg = await swReady();
+      await (await reg?.pushManager.getSubscription())?.unsubscribe();
       await fetch('/api/push/subscribe', { method: 'DELETE' }).catch(() => null); // offline: the cron drops it on 404/410
       toast('Reminders off');
     } catch {
@@ -348,6 +377,7 @@ function NotificationsCard() {
           <span className="text-xs text-text3">Not supported here</span>
         ) : state === 'denied' ? (
           <span className="text-xs text-text3">Blocked in system settings</span>
+
         ) : state === 'on' ? (
           <button disabled={busy} onClick={() => void disable()} className="h-11 px-3 rounded-lg bg-bg3 border border-border text-sm">
             Turn off

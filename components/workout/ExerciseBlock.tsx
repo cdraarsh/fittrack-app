@@ -23,7 +23,7 @@ interface Props {
 }
 
 // int = reps/seconds, else weight; clamped to what the database stores.
-const parseNum = (v: string, int: boolean): number | null => parseSetValue(v, int ? 'reps' : 'weight_kg');
+const parseNum = (v: string, field: 'weight_kg' | 'reps' | 'seconds'): number | null => parseSetValue(v, field);
 
 /**
  * v1's set grid, rewired to the local store. Saves on tick and on blur, never
@@ -39,9 +39,12 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   const timed = exercise?.is_timed ?? false;
   const exName = exercise?.name ?? se.exercise_id;
   const swapped = se.exercise_id !== se.prescribed_exercise_id;
+  // A swap keeps the prescribed sets but the swapped-in exercise's own range
+  // (e.g. knee raise 12–15 reps → L-sit 15–30 s).
+  const range = swapped && exercise && exercise.is_timed !== prescribed?.is_timed ? { rep_lo: exercise.rep_lo, rep_hi: exercise.rep_hi } : { rep_lo: se.rep_lo, rep_hi: se.rep_hi };
   const byIndex = new Map(logs.map((l) => [l.set_index, l]));
   const prefill = prefillWeight(lastWeight, isDeload, se.target_kg);
-  const topOfRange = topOfRangeHint(se, logs, timed);
+  const topOfRange = topOfRangeHint({ ...se, rep_hi: range.rep_hi }, logs, timed);
 
   // Inputs are uncontrolled and keyed by index, so a save never remounts the
   // row (that wiped the other field and closed the iPhone keyboard). Push saved
@@ -63,7 +66,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
 
   async function blurSave(i: number, field: 'weight_kg' | 'reps' | 'seconds', raw: string) {
     const log = byIndex.get(i);
-    const val = parseNum(raw, field !== 'weight_kg');
+    const val = parseNum(raw, field);
     const current = log ? log[field] : field === 'weight_kg' ? prefill : null;
     if (val === current) return;
     if (mode === 'complete' && (!log?.done || val === null || (field !== 'weight_kg' && val === 0))) return;
@@ -71,7 +74,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
     // First save of a row from the reps/seconds field: keep the weight shown
     // (prefilled or typed), or the new row would store weight = null.
     if (!log && field !== 'weight_kg') {
-      const w = parseNum(weightRefs.current[i]?.value ?? '', false);
+      const w = parseNum(weightRefs.current[i]?.value ?? '', 'weight_kg');
       if (w !== null) patch.weight_kg = w;
     }
     try {
@@ -85,8 +88,8 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
     const log = byIndex.get(i);
     if (mode !== 'active') return;
     const nowDone = !log?.done;
-    const weight = parseNum(weightRefs.current[i]?.value ?? '', false);
-    const value = parseNum(valueRefs.current[i]?.value ?? '', true);
+    const weight = parseNum(weightRefs.current[i]?.value ?? '', 'weight_kg');
+    const value = parseNum(valueRefs.current[i]?.value ?? '', timed ? 'seconds' : 'reps');
     if (nowDone && !value) {
       toast(timed ? 'Enter seconds first' : 'Enter reps first');
       valueRefs.current[i]?.focus();
@@ -126,8 +129,8 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
         </div>
       </div>
       <div className="text-xs text-text3 font-semibold tracking-wide mb-2.5">
-        {se.sets} × {se.rep_lo}
-        {se.rep_lo !== se.rep_hi ? `–${se.rep_hi}` : ''}
+        {se.sets} × {range.rep_lo}
+        {range.rep_lo !== range.rep_hi ? `–${range.rep_hi}` : ''}
         {timed ? 's' : ' reps'} · Rest {se.rest_s}s
         {se.target_kg !== null && se.target_kg > 0 && <> · start {se.target_kg} kg</>}
       </div>
@@ -176,7 +179,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
                   inputMode="numeric"
                   aria-label={`${exName} set ${i + 1} ${timed ? 'seconds' : 'reps'}`}
                   defaultValue={v ?? undefined}
-                  placeholder={`${se.rep_lo}–${se.rep_hi}`}
+                  placeholder={`${range.rep_lo}–${range.rep_hi}`}
                   readOnly={!editable}
                   enterKeyHint="done"
                   onFocus={(e) => e.currentTarget.select()}

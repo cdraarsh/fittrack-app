@@ -146,7 +146,7 @@ export default function FloatingCoach() {
             role="dialog"
             aria-modal="true"
             aria-label="AI coach"
-            className="w-full max-w-app pb-[env(safe-area-inset-bottom)]"
+            className="w-full max-w-app pb-[env(safe-area-inset-bottom)] max-h-[calc(100dvh-env(safe-area-inset-top)-16px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <CoachCard

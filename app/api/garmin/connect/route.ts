@@ -40,7 +40,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await connectGarmin(userId, apiKey, resolveExpiry(body));
+    const expiry = resolveExpiry(body);
+    if (body?.expiresAt !== undefined && expiry === null) {
+      return NextResponse.json({ error: 'Key expiry must be a date in the next year' }, { status: 400 });
+    }
+    await connectGarmin(userId, apiKey, expiry);
     return NextResponse.json(await getGarminStatus(userId));
   } catch (e) {
     if (e instanceof GarminNotConfiguredError) return notConfigured(e);

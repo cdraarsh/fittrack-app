@@ -37,7 +37,21 @@ export interface InsightDeps {
 
 const isRules = (model: string) => model === RULES_MODEL || model.startsWith('rules');
 
-export async function getDailyInsight(deps: InsightDeps): Promise<InsightResult> {
+// One generation per user+day at a time in this server instance: concurrent
+// first-of-the-day requests share it instead of each calling the model (the
+// store is insert-only, first write wins, so they'd also disagree on text).
+const inflight = new Map<string, Promise<InsightResult>>();
+
+export function getDailyInsight(deps: InsightDeps): Promise<InsightResult> {
+  const key = `${deps.userId}|${deps.today}`;
+  const running = inflight.get(key);
+  if (running) return running;
+  const p = getDailyInsightOnce(deps).finally(() => inflight.delete(key));
+  inflight.set(key, p);
+  return p;
+}
+
+async function getDailyInsightOnce(deps: InsightDeps): Promise<InsightResult> {
   const { userId, today, store, providers, log = () => {} } = deps;
 
   let cached: DailyInsightRow | null = null;
