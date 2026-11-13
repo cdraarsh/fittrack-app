@@ -432,7 +432,7 @@ function StopSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="stop-title"
-        className="w-full max-w-app bg-bg1 border-t border-border rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-3"
+        className="w-full max-w-app max-h-[calc(100dvh-env(safe-area-inset-top)-16px)] overflow-y-auto bg-bg1 border-t border-border rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-3"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="stop-title" className="font-condensed text-2xl font-black">Stop session?</h3>

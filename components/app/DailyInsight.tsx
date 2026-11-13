@@ -5,49 +5,69 @@ import { Sparkles } from 'lucide-react';
 
 const KEY = 'fittrack:insight';
 export const SYNCED_EVENT = 'fittrack:synced';
+/** A non-final answer is re-asked after a sync at most this often. */
+const REFETCH_MIN_MS = 2 * 60_000;
 
 interface InsightResponse {
   text?: string;
   source?: 'model' | 'rules';
+  cached?: boolean;
   degraded?: boolean;
+}
+interface Stored {
+  date: string;
+  text: string;
+  final: boolean;
 }
 
 /**
- * Today's ≤3-line insight from /api/insight. Only a real model insight is kept
- * for the day (so offline opens still show it); rule-based or degraded answers
- * are shown but re-fetched after the next successful sync, so an insight made
- * before the program reached the server never sticks.
+ * Today's ≤3-line insight from /api/insight.
+ * - Final for the day (never re-asked): a model answer, or anything the server
+ *   says it cached (incl. a rules row after a model failure).
+ * - Not final: a rules answer the server didn't cache (no program on the server
+ *   yet, or no AI key). Shown, remembered for offline opens, and re-asked after
+ *   a sync at most every 2 minutes, one request at a time.
+ * - A degraded answer (server couldn't read the database) is shown but never stored.
  */
 export default function DailyInsight({ today }: { today: string }) {
   const [text, setText] = useState<string | null>(null);
   const final = useRef(false);
+  const inFlight = useRef(false);
+  const lastFetch = useRef(0);
 
-  const load = useCallback(() => {
-    if (final.current || typeof navigator === 'undefined' || !navigator.onLine) return () => {};
-    let cancelled = false;
-    fetch('/api/insight', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: InsightResponse | null) => {
-        if (cancelled || !d?.text) return;
-        setText(d.text);
-        if (d.source === 'model' && !d.degraded) {
-          final.current = true;
+  const load = useCallback(
+    (fromSync: boolean) => {
+      if (final.current || inFlight.current || typeof navigator === 'undefined' || !navigator.onLine) return;
+      if (fromSync && Date.now() - lastFetch.current < REFETCH_MIN_MS) return;
+      inFlight.current = true;
+      lastFetch.current = Date.now();
+      const forDay = today;
+      fetch('/api/insight', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: InsightResponse | null) => {
+          if (!d?.text || forDay !== today) return;
+          setText(d.text);
+          if (d.degraded) return;
+          const isFinal = d.source === 'model' || d.cached === true;
+          if (isFinal) final.current = true;
           try {
-            localStorage.setItem(KEY, JSON.stringify({ date: today, text: d.text }));
+            localStorage.setItem(KEY, JSON.stringify({ date: forDay, text: d.text, final: isFinal } satisfies Stored));
           } catch {
             /* ignore */
           }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [today]);
+        })
+        .catch(() => {})
+        .finally(() => {
+          inFlight.current = false;
+        });
+    },
+    [today],
+  );
 
   useEffect(() => {
     final.current = false;
-    let cached: { date: string; text: string } | null = null;
+    lastFetch.current = 0;
+    let cached: Stored | null = null;
     try {
       cached = JSON.parse(localStorage.getItem(KEY) ?? 'null');
     } catch {
@@ -55,16 +75,18 @@ export default function DailyInsight({ today }: { today: string }) {
     }
     if (cached?.date === today && cached.text) {
       setText(cached.text);
-      final.current = true;
-      return;
+      // Older stored entries had no flag and were only ever model answers.
+      if (cached.final !== false) {
+        final.current = true;
+        return;
+      }
+    } else {
+      setText(null);
     }
-    const cancel = load();
-    const onSynced = () => load();
+    load(false);
+    const onSynced = () => load(true);
     window.addEventListener(SYNCED_EVENT, onSynced);
-    return () => {
-      cancel();
-      window.removeEventListener(SYNCED_EVENT, onSynced);
-    };
+    return () => window.removeEventListener(SYNCED_EVENT, onSynced);
   }, [today, load]);
 
   if (!text) return null;

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 import { isCronAuthorized } from '@/lib/server/cronAuth';
 import { dayInfo } from '@/lib/program/days';
+import { advance, type SessionNode } from '@/lib/program/unlock';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,20 +38,33 @@ export async function GET(req: NextRequest) {
   if (error || !subs?.length) return NextResponse.json({ sent: 0 });
 
   const userIds = subs.map((s) => s.user_id as string);
-  const [{ data: settingsRows }, { data: current }] = await Promise.all([
-    db.from('user_settings').select('user_id, preferred_days, timezone').in('user_id', userIds),
-    db
-      .from('program_sessions')
-      .select('user_id, seq, title, template_key, status')
-      .in('user_id', userIds)
-      .in('status', ['up_next', 'in_progress'])
-      .order('seq', { ascending: true }),
+  const [{ data: settingsRows }, { data: programs }] = await Promise.all([
+    db.from('user_settings').select('user_id, preferred_days, timezone, unlock_rule').in('user_id', userIds),
+    db.from('programs').select('id, user_id, status').in('user_id', userIds).eq('status', 'active'),
   ]);
   const settings = new Map((settingsRows ?? []).map((r) => [r.user_id as string, r]));
-  const waiting = new Map<string, { seq: number; title: string | null; template_key: string; status: string }>();
-  for (const s of current ?? []) if (!waiting.has(s.user_id as string)) waiting.set(s.user_id as string, s as never);
+  const activeIds = (programs ?? []).map((p) => p.id as string);
+  const { data: sessionRows } = activeIds.length
+    ? await db
+        .from('program_sessions')
+        .select('id, user_id, program_id, seq, title, template_key, status, unlocked_at, started_at, completed_at')
+        .in('program_id', activeIds)
+        .order('seq', { ascending: true })
+    : { data: [] as Record<string, unknown>[] };
 
+  // Unlocks are applied lazily (when the app opens), so the DB can still say
+  // "locked" the morning after a session. Run the app's own rule (advance) over
+  // the active program to find what is really waiting today; nothing is written.
   const now = new Date();
+  const waiting = new Map<string, SessionNode & { title: string | null; template_key: string }>();
+  for (const userId of userIds) {
+    const s = settings.get(userId);
+    const rows = (sessionRows ?? []).filter((r) => r.user_id === userId) as unknown as (SessionNode & { title: string | null; template_key: string })[];
+    if (!s || !rows.length) continue;
+    const r = advance(rows, { type: 'refresh' }, { rule: s.unlock_rule ?? 'next_calendar_day', timeZone: s.timezone || 'UTC', now });
+    if (r.current) waiting.set(userId, r.current);
+  }
+
   let sent = 0;
   const errors: string[] = [];
   await Promise.allSettled(
@@ -73,7 +87,9 @@ export async function GET(req: NextRequest) {
         sent++;
       } catch (err) {
         const code = (err as { statusCode?: number }).statusCode;
-        if (code === 404 || code === 410) await db.from('ft_push_subscriptions').delete().eq('user_id', sub.user_id);
+        // Gone: drop exactly this endpoint (a newer subscription saved meanwhile survives).
+        if (code === 404 || code === 410)
+          await db.from('ft_push_subscriptions').delete().eq('user_id', sub.user_id).eq('subscription->>endpoint', sub.subscription.endpoint);
         else errors.push(String(err));
       }
     }),
