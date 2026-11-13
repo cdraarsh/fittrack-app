@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Spinner from '@/components/app/Spinner';
 import GarminSection from '@/components/settings/GarminSection';
 import { toast } from '@/components/shared/Toast';
@@ -142,17 +142,29 @@ function SettingsForm({ userId, settings }: { userId: string; settings: UserSett
       </Card>
 
       <Card title="AI coach">
-        <Row label="Daily message cap" hint="Empty = no cap">
+        <Row label="Daily message cap" hint="1–100 a day. Empty = the maximum (100).">
           <input
             type="number"
-            min={0}
+            min={1}
+            max={100}
             inputMode="numeric"
             defaultValue={settings.coach_daily_cap ?? ''}
             onBlur={(e) => {
-              const v = e.target.value.trim() === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0);
-              if (v !== settings.coach_daily_cap) save({ coach_daily_cap: v });
+              const raw = e.target.value.trim();
+              if (raw === '') {
+                if (settings.coach_daily_cap !== null) save({ coach_daily_cap: null });
+                return;
+              }
+              const n = Number(raw);
+              // Junk or out of range never silently turns the coach off: put the old value back.
+              if (!Number.isInteger(n) || n < 1 || n > 100) {
+                e.target.value = settings.coach_daily_cap === null ? '' : String(settings.coach_daily_cap);
+                toast('Pick a cap from 1 to 100, or leave it empty for the maximum');
+                return;
+              }
+              if (n !== settings.coach_daily_cap) save({ coach_daily_cap: n });
             }}
-            className="w-20 bg-bg3 border border-border rounded-lg text-sm font-semibold text-center py-1.5"
+            className="w-20 h-11 bg-bg3 border border-border-strong rounded-lg text-base font-semibold text-center"
             aria-label="Coach daily message cap"
           />
         </Row>
@@ -252,27 +264,64 @@ function FailedList({ failed }: { failed: OutboxOp[] }) {
 }
 
 function NotificationsCard() {
-  const [state, setState] = useState<'unsupported' | 'default' | 'granted' | 'denied'>('default');
+  // On/off comes from the actual push subscription, not the permission: after
+  // "Turn off" the permission stays granted, and a failed subscribe or save
+  // must not show reminders as on.
+  type State = 'loading' | 'unsupported' | 'denied' | 'off' | 'on';
+  const [state, setState] = useState<State>('loading');
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) setState('unsupported');
-    else setState(Notification.permission as 'default' | 'granted' | 'denied');
+  const refresh = useCallback(async () => {
+    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
+      setState('unsupported');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setState('denied');
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (!reg.pushManager) {
+        setState('unsupported');
+        return;
+      }
+      setState((await reg.pushManager.getSubscription()) ? 'on' : 'off');
+    } catch {
+      setState('off');
+    }
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   async function enable() {
     setBusy(true);
     try {
       const permission = await Notification.requestPermission();
-      setState(permission as typeof state);
-      if (permission !== 'granted') return;
+      if (permission !== 'granted') {
+        toast(permission === 'denied' ? 'Notifications are blocked for this app' : 'Notifications not allowed');
+        return;
+      }
+      const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!key) {
+        toast('Reminders aren’t set up on the server yet');
+        return;
+      }
       const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY });
+      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
       const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-      toast(res.ok ? 'Reminders on' : 'Could not save reminders');
+      if (!res.ok) {
+        await sub.unsubscribe().catch(() => false); // don't look "on" when the server doesn't know
+        toast('Could not save reminders');
+        return;
+      }
+      toast('Reminders on');
     } catch {
-      toast('Could not enable notifications');
+      toast('Could not turn reminders on');
     } finally {
+      await refresh();
       setBusy(false);
     }
   }
@@ -282,29 +331,34 @@ function NotificationsCard() {
     try {
       const reg = await navigator.serviceWorker.ready;
       await (await reg.pushManager.getSubscription())?.unsubscribe();
-      await fetch('/api/push/subscribe', { method: 'DELETE' });
+      await fetch('/api/push/subscribe', { method: 'DELETE' }).catch(() => null); // offline: the cron drops it on 404/410
       toast('Reminders off');
+    } catch {
+      toast('Could not turn reminders off');
     } finally {
+      await refresh();
       setBusy(false);
     }
   }
 
   return (
     <Card title="Reminders">
-      <Row label="Training-day reminder" hint="Web push on your preferred days. On iPhone, install the app to the Home Screen first.">
+      <Row label="Training-day reminder" hint="A morning push on your preferred days when a session is waiting. On iPhone, install the app to the Home Screen first.">
         {state === 'unsupported' ? (
           <span className="text-xs text-text3">Not supported here</span>
-        ) : state === 'granted' ? (
-          <button disabled={busy} onClick={() => void disable()} className="px-3 py-1.5 rounded-lg bg-bg3 border border-border text-sm">
+        ) : state === 'denied' ? (
+          <span className="text-xs text-text3">Blocked in system settings</span>
+        ) : state === 'on' ? (
+          <button disabled={busy} onClick={() => void disable()} className="h-11 px-3 rounded-lg bg-bg3 border border-border text-sm">
             Turn off
           </button>
         ) : (
           <button
-            disabled={busy || state === 'denied'}
+            disabled={busy || state === 'loading'}
             onClick={() => void enable()}
-            className="px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-sm font-bold disabled:opacity-40"
+            className="h-11 px-3 rounded-lg bg-accent/10 border border-accent/30 text-accent text-sm font-bold disabled:opacity-40"
           >
-            {state === 'denied' ? 'Blocked' : 'Turn on'}
+            Turn on
           </button>
         )}
       </Row>

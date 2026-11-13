@@ -67,7 +67,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="max-w-app mx-auto min-h-screen flex flex-col">
-      <header className="bg-bg1 border-b border-accent/10 px-5 py-3 sticky top-0 z-40 flex items-center justify-between">
+      <header className="bg-bg1 border-b border-accent/10 px-5 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sticky top-0 z-40 flex items-center justify-between">
         <h1 className="font-condensed text-2xl font-black gradient-text tracking-tight">FitTrack</h1>
         <div className="flex items-center gap-3">
           {sync.state === 'offline' ? (

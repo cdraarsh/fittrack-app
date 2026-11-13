@@ -76,12 +76,23 @@ self.addEventListener('message', (event) => {
 // ─── Web push (kept from v1) ──────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  let payload: { title?: string; body?: string; tag?: string; url?: string };
+  // Always show something: iOS can drop a push subscription after "silent"
+  // pushes, so a malformed payload (null, a bare string) still notifies.
+  let payload: { title?: string; body?: string; tag?: string; url?: string } = {};
   try {
-    payload = event.data.json();
+    const parsed: unknown = event.data.json();
+    if (parsed && typeof parsed === 'object') payload = parsed as typeof payload;
+    else if (typeof parsed === 'string') payload = { body: parsed };
   } catch {
-    payload = { title: 'FitTrack', body: event.data.text() };
+    payload = { body: event.data.text() };
   }
+  const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.slice(0, max) : undefined);
+  payload = {
+    title: str(payload.title, 80),
+    body: str(payload.body, 240),
+    tag: str(payload.tag, 64),
+    url: typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/today',
+  };
   event.waitUntil(
     self.registration.showNotification(payload.title ?? 'FitTrack', {
       body: payload.body ?? '',
@@ -98,8 +109,13 @@ self.addEventListener('notificationclick', (event) => {
   const url: string = event.notification.data?.url ?? '/today';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const c of list) if ('focus' in c) return (c as WindowClient).focus();
-      return self.clients.openWindow(url);
+      // Same-origin paths only; bring an open window to the notification's page.
+      const target = url.startsWith('/') ? url : '/today';
+      for (const c of list) {
+        const w = c as WindowClient;
+        if ('focus' in w) return (w.url.endsWith(target) ? Promise.resolve(w) : w.navigate(target).catch(() => w)).then((x) => (x ?? w).focus());
+      }
+      return self.clients.openWindow(target);
     }),
   );
 });

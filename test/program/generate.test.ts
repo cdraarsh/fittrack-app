@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateProgram, FOUR_DAY_SPLIT, missingWorkingSets, allWorkingSetsDone, hitTopOfRange, setLogId, deterministicUuid, advance } from '@/lib/program';
+import { generateProgram, FOUR_DAY_SPLIT, missingWorkingSets, allWorkingSetsDone, hitTopOfRange,
+  topOfRangeHint, setLogId, deterministicUuid, advance } from '@/lib/program';
 import { EXERCISES_BY_ID } from '@/lib/exercises';
 
 const input = { template: FOUR_DAY_SPLIT, programId: '11111111-1111-4111-8111-111111111111', userId: 'user_1', startDate: '2026-11-10', now: '2026-11-10T08:00:00.000Z' };
@@ -74,7 +75,7 @@ describe('generateProgram', () => {
 
 describe('completion predicate', () => {
   const ses = [{ id: 'a', sets: 2, rep_hi: 10 }, { id: 'b', sets: 1, rep_hi: 45 }];
-  const log = (se: string, i: number, o: Partial<{ done: boolean; reps: number | null; seconds: number | null }> = {}) =>
+  const log = (se: string, i: number, o: Partial<{ done: boolean; reps: number | null; seconds: number | null; weight_kg: number | null }> = {}) =>
     ({ session_exercise_id: se, set_index: i, done: true, reps: 10, seconds: null, ...o });
 
   it('counts every prescribed set', () => {
@@ -87,10 +88,15 @@ describe('completion predicate', () => {
   it('extra sets beyond the prescription are ignored', () => {
     expect(allWorkingSetsDone(ses, [log('a', 0), log('a', 1), log('a', 2), log('b', 0)])).toBe(true);
   });
-  it('+2.5 kg hint only when all sets hit the top of the range', () => {
-    expect(hitTopOfRange(ses[0], [log('a', 0), log('a', 1)], false)).toBe(true);
-    expect(hitTopOfRange(ses[0], [log('a', 0), log('a', 1, { reps: 9 })], false)).toBe(false);
-    expect(hitTopOfRange(ses[1], [log('b', 0, { reps: null, seconds: 45 })], true)).toBe(true);
+  it('+2.5 kg hint only for loaded sets that all hit the top of the range', () => {
+    const kg = { weight_kg: 40 };
+    expect(hitTopOfRange(ses[0], [log('a', 0, kg), log('a', 1, kg)], false)).toBe(true);
+    expect(hitTopOfRange(ses[0], [log('a', 0, kg), log('a', 1, { ...kg, reps: 9 })], false)).toBe(false);
+    // Timed holds and bodyweight sets get their own progression hint, never "+2.5 kg".
+    expect(hitTopOfRange(ses[1], [log('b', 0, { reps: null, seconds: 45 })], true)).toBe(false);
+    expect(topOfRangeHint(ses[1], [log('b', 0, { reps: null, seconds: 45 })], true)).toMatch(/add 5–10 s/);
+    expect(topOfRangeHint(ses[0], [log('a', 0), log('a', 1)], false)).toMatch(/add reps or load/);
+    expect(topOfRangeHint(ses[0], [log('a', 0, kg), log('a', 1, kg)], false)).toMatch(/add 2.5 kg/);
   });
 });
 

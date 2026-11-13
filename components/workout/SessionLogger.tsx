@@ -343,7 +343,7 @@ function SessionBar({
   }, [paused]);
   const active = activeMs(pause, now);
   return (
-    <div className="sticky top-[57px] z-30 -mx-4 px-4 py-2 mb-3 bg-bg/95 backdrop-blur border-b border-accent/15 flex items-center gap-2">
+    <div className="sticky top-[calc(57px+env(safe-area-inset-top))] z-30 -mx-4 px-4 py-2 mb-3 bg-bg/95 backdrop-blur border-b border-accent/15 flex items-center gap-2">
       {paused ? <Pause size={14} className="text-warn flex-shrink-0" aria-hidden /> : <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" aria-hidden />}
       <div className="min-w-0">
         <div className="text-xs font-bold uppercase tracking-widest text-text2 leading-none">{paused ? 'Paused' : 'In session'}</div>

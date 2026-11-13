@@ -62,8 +62,11 @@ export async function getGarminStatus(userId: string): Promise<GarminStatus> {
 /** Resolve the key expiry from request input: explicit ISO date or a lifetime in days. */
 export function resolveExpiry(input: { expiresAt?: unknown; expiresInDays?: unknown }, now = new Date()): string | null {
   if (typeof input.expiresAt === 'string') {
+    // Personal API keys last at most 365 days: refuse past or absurd dates.
     const d = new Date(input.expiresAt);
-    if (!Number.isNaN(d.getTime())) return d.toISOString();
+    const t = d.getTime();
+    if (!Number.isNaN(t) && t > now.getTime() && t <= now.getTime() + 400 * 86_400_000) return d.toISOString();
+    return null;
   }
   const days = Number(input.expiresInDays);
   if ((KEY_LIFETIME_DAYS as readonly number[]).includes(days)) return expiryFromLifetime(days, now).toISOString();

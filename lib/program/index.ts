@@ -6,3 +6,4 @@ export * from './completion';
 export * from './ids';
 export * from './days';
 export * from './routines';
+export * from './inputs';

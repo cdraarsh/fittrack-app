@@ -56,6 +56,13 @@ export async function getDailyInsight(deps: InsightDeps): Promise<InsightResult>
   const pack = await deps.loadStats();
   const rules = ruleBasedInsight(pack);
 
+  // No program on the server yet (e.g. "Start program" still in the phone's
+  // outbox): answer with rules, cache nothing and spend no model request, so the
+  // real insight is generated once the program arrives (rows are insert-only).
+  if (!pack.program) {
+    return { date: today, text: rules, model: RULES_MODEL, source: 'rules', cached: false };
+  }
+
   if (providers.length === 0) {
     // No key configured: zero model requests, nothing to cache.
     return { date: today, text: rules, model: RULES_MODEL, source: 'rules', cached: false };
