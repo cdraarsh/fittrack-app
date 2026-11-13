@@ -48,24 +48,28 @@ interface Props {
 }
 
 export default function RoutineCard({ kind, sessionId, items, minutes, defaultOpen, readOnly, ramp }: Props) {
-  const [manualOpen, setManualOpen] = useState<boolean | null>(null);
+  // A manual toggle is stored with the automatic state it overrode, and only
+  // applies until that automatic state changes (e.g. all working sets done →
+  // the cool-down opens even if it was collapsed earlier in the session).
+  const [manual, setManual] = useState<{ open: boolean; forDefault: boolean } | null>(null);
   const [ticks, setTicks] = useState<string[]>([]);
   const panelId = useId();
   const title = kind === 'warmup' ? 'Warm-up' : 'Cool-down';
 
   // Load after mount (SSR-safe) and whenever the session changes.
   useEffect(() => {
-    const o = readJson<boolean>(key(sessionId, kind, 'open'));
-    setManualOpen(typeof o === 'boolean' ? o : null);
+    const o = readJson<{ open: boolean; forDefault: boolean }>(key(sessionId, kind, 'open'));
+    setManual(o && typeof o === 'object' && typeof o.open === 'boolean' && typeof o.forDefault === 'boolean' ? o : null);
     const t = readJson<string[]>(key(sessionId, kind, 'ticks'));
     setTicks(Array.isArray(t) ? t.filter((x) => typeof x === 'string') : []);
   }, [sessionId, kind]);
 
-  const open = readOnly ? (manualOpen ?? false) : (manualOpen ?? defaultOpen);
+  const auto = readOnly ? false : defaultOpen;
+  const open = manual && manual.forDefault === auto ? manual.open : auto;
 
   const toggle = () => {
-    const next = !open;
-    setManualOpen(next);
+    const next = { open: !open, forDefault: auto };
+    setManual(next);
     if (!readOnly) writeJson(key(sessionId, kind, 'open'), next);
   };
 
