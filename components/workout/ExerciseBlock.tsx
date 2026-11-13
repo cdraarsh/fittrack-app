@@ -2,10 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Lightbulb, ArrowLeftRight, Check, Circle, Trophy, Watch } from 'lucide-react';
-import { hitTopOfRange, roundToPlate } from '@/lib/program';
+import { hitTopOfRange, prefillWeight } from '@/lib/program';
 import type { SessionBundleItem } from '@/lib/local/hooks';
 import type { SetPatch } from '@/lib/local/actions';
 import SwapSheet from './SwapSheet';
+import { VideoButton } from './VideoSheet';
 import { toast } from '../shared/Toast';
 
 export type LoggerMode = 'active' | 'complete' | 'preview';
@@ -41,8 +42,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   const timed = exercise?.is_timed ?? false;
   const swapped = se.exercise_id !== se.prescribed_exercise_id;
   const byIndex = new Map(logs.map((l) => [l.set_index, l]));
-  const prefill =
-    lastWeight !== null ? (isDeload ? roundToPlate(lastWeight * 0.6) : lastWeight) : se.target_kg;
+  const prefill = prefillWeight(lastWeight, isDeload, se.target_kg);
   const topOfRange = hitTopOfRange(se, logs, timed);
 
   // Inputs are uncontrolled and keyed by index, so a save never remounts the
@@ -114,15 +114,18 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
           {exercise?.name ?? se.exercise_id}
           {swapped && <span className="text-[11px] text-text3 font-normal ml-1">(swapped from {prescribed?.name})</span>}
         </div>
-        {mode === 'active' && (
-          <button
-            aria-label="Swap exercise"
-            onClick={() => setSwapOpen(true)}
-            className="text-text3 hover:text-accent ml-2 flex-shrink-0 cursor-pointer"
-          >
-            <ArrowLeftRight size={15} />
-          </button>
-        )}
+        <div className="flex items-center -mr-2 -my-2.5 ml-1 flex-shrink-0">
+          <VideoButton videoKey={se.exercise_id} name={exercise?.name ?? se.exercise_id} />
+          {mode === 'active' && (
+            <button
+              aria-label="Swap exercise"
+              onClick={() => setSwapOpen(true)}
+              className="w-11 h-11 flex items-center justify-center rounded-lg text-text3 hover:text-accent cursor-pointer"
+            >
+              <ArrowLeftRight size={15} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="text-[11px] text-text3 font-semibold tracking-wide mb-2.5">
         {se.sets} × {se.rep_lo}

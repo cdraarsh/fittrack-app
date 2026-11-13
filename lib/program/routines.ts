@@ -118,6 +118,14 @@ export const RAMP_STEPS: ReadonlyArray<{ pct: number; reps: number }> = [
 export const BAR_EQUIPMENT = new Set(['barbell', 'smith', 'trap_bar']);
 export const BAR_KG = 20;
 
+/**
+ * The weight the set grid prefills for a lift: last done weight (deload ~60 %),
+ * else the session's target. Shared with ExerciseBlock so the ramp matches.
+ */
+export function prefillWeight(lastWeight: number | null, isDeload: boolean, targetKg: number | null): number | null {
+  return lastWeight !== null ? (isDeload ? roundToPlate(lastWeight * 0.6) : lastWeight) : targetKg;
+}
+
 /** Seconds per ramp set incl. plate change (drives "~N min"). */
 export const RAMP_SET_S = 45;
 
