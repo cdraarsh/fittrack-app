@@ -21,6 +21,8 @@ export interface ProgramSessionRow {
   title: string | null;
   status: string | null;            // 'locked' | 'up_next' | 'in_progress' | 'complete'
   completed_at: string | null;      // ISO timestamp
+  template_key?: string | null;     // day template, for the "Day N · category" label
+  is_deload?: boolean | null;
 }
 
 export interface SessionExerciseRow {

@@ -12,6 +12,8 @@ import type {
   SetLogRow,
   StatsInput,
 } from './types';
+import { dayInfo } from '@/lib/program/days';
+import { prefillWeight } from '@/lib/program/routines';
 
 // ─── Date helpers (YYYY-MM-DD, UTC arithmetic so DST never shifts a day) ─────
 
@@ -202,12 +204,14 @@ function buildProgram(input: StatsInput, idx: Indexed): StatsPack['program'] {
     nextSession = {
       seq: next.seq,
       week: next.week,
-      title: next.title,
+      // Same name the app shows ("Day 2 · Lower · Quads").
+      title: next.template_key ? dayInfo({ seq: next.seq, template_key: next.template_key, title: next.title }).label : next.title,
       exercises: ses.map(se => ({
         name: idx.exById.get(se.exercise_id)?.name ?? 'Unknown',
         sets: se.sets,
         reps: repRange(se.rep_lo, se.rep_hi),
-        targetKg: se.target_kg,
+        // Same target the logger prefills: last done weight (≈60% on deload), else the template start.
+        targetKg: prefillWeight(lastDoneWeight(input, idx, se.exercise_id, next.id), !!next.is_deload, se.target_kg),
       })),
     };
   }
@@ -222,6 +226,19 @@ function buildProgram(input: StatsInput, idx: Indexed): StatsPack['program'] {
     phase: phaseFor(week, totalWeeks),
     daysSinceLast: lastDate ? daysBetween(lastDate, today) : null,
   };
+}
+
+/** Most recent done weight for an exercise, outside the given session (matches the logger's prefill). */
+function lastDoneWeight(input: StatsInput, idx: Indexed, exerciseId: string, excludeSessionId: string): number | null {
+  let best: { kg: number; at: string } | null = null;
+  for (const s of input.setLogs) {
+    if (!s.done || !isNum(s.weight_kg) || s.weight_kg <= 0) continue;
+    const se = idx.seById.get(s.session_exercise_id);
+    if (!se || se.exercise_id !== exerciseId || se.session_id === excludeSessionId) continue;
+    const at = s.updated_at ?? '';
+    if (!best || at > best.at) best = { kg: s.weight_kg, at };
+  }
+  return best?.kg ?? null;
 }
 
 function repRange(lo: number | null, hi: number | null): string | null {

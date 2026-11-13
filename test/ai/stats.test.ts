@@ -69,7 +69,7 @@ describe('buildStatsPack (rich data)', () => {
       daysSinceLast: 4,
     });
     expect(pack.program!.nextSession).toMatchObject({ seq: 13, title: 'Upper A' });
-    expect(pack.program!.nextSession!.exercises[0]).toEqual({ name: 'Bench Press', sets: 3, reps: '5-8', targetKg: 95 });
+    expect(pack.program!.nextSession!.exercises[0]).toEqual({ name: 'Bench Press', sets: 3, reps: '5-8', targetKg: 92.5 });
   });
 
   it('last session top set and misses', () => {
@@ -180,5 +180,22 @@ describe('missing data', () => {
     const bw = buildBodyweight([{ date: '2026-11-01', kg: 80 }, { date: '2026-11-02', kg: null }], TODAY)!;
     expect(bw).toEqual({ latest: 80, latestDate: '2026-11-01', avg7: null, prevAvg7: 80, change: null });
     expect(buildBodyweight([], TODAY)).toBeNull();
+  });
+});
+
+describe('next session: same name and target as the app shows', () => {
+  it('labels Day N · category and falls back to the template start when never lifted', async () => {
+    const { buildStatsPack, emptyStatsInput } = await import('@/lib/ai/stats');
+    const input = emptyStatsInput('2026-11-14');
+    input.program = { id: 'p', name: 'p', start_date: '2026-11-10', sessions_per_week: 4, weeks: 16, status: 'active' } as never;
+    input.sessions = [
+      { id: 's1', seq: 1, week: 1, title: 'Upper A — Push Focus', status: 'complete', completed_at: '2026-11-10T10:00:00Z', template_key: 'upper_a' },
+      { id: 's2', seq: 2, week: 1, title: 'Lower A — Quad Focus', status: 'up_next', completed_at: null, template_key: 'lower_a', is_deload: false },
+    ];
+    input.exercises = [{ id: 'squat', name: 'Barbell Back Squat', pattern: 'squat', is_timed: false }] as never;
+    input.sessionExercises = [{ id: 'se2', session_id: 's2', exercise_id: 'squat', position: 0, sets: 3, rep_lo: 6, rep_hi: 8, target_kg: 60 }] as never;
+    const next = buildStatsPack(input).program!.nextSession!;
+    expect(next.title).toBe('Day 2 · Lower · Quads');
+    expect(next.exercises[0].targetKg).toBe(60);
   });
 });
