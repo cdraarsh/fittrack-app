@@ -47,7 +47,9 @@ export default function CoachCard({ className = '', context = null, suggestions 
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled || !data) return;
-        setMessages((data.messages ?? []).filter((m: ChatMessage) => m.content));
+        // A slow history load must not wipe a message sent (and answered) meanwhile.
+        const history = (data.messages ?? []).filter((m: ChatMessage) => m.content);
+        setMessages((prev) => (prev.length ? prev : history));
         setCap({ cap: data.cap, used: data.used, remaining: data.remaining });
         setAvailable(data.available !== false);
       })
