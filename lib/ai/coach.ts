@@ -52,7 +52,7 @@ export function toModelHistory(rows: Pick<CoachMessageRow, 'role' | 'content' | 
 // of the session in front of them (fresher than the server stats pack when the
 // phone hasn't synced). Untrusted input: whitelisted, typed and clamped.
 
-export type CoachPage = 'today' | 'program' | 'history' | 'settings';
+export type CoachPage = 'today' | 'strength' | 'history' | 'settings';
 
 export interface CoachContext {
   page: CoachPage;
@@ -67,7 +67,7 @@ export interface CoachContext {
   };
 }
 
-const PAGES: readonly CoachPage[] = ['today', 'program', 'history', 'settings'];
+const PAGES: readonly CoachPage[] = ['today', 'strength', 'history', 'settings'];
 const STATUSES = ['up_next', 'in_progress', 'complete', 'locked'] as const;
 
 function cleanText(v: unknown, max = 60): string | undefined {

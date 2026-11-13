@@ -69,8 +69,15 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
     const current = log ? log[field] : field === 'weight_kg' ? prefill : null;
     if (val === current) return;
     if (mode === 'complete' && (!log?.done || val === null || (field !== 'weight_kg' && val === 0))) return;
+    const patch: SetPatch = { [field]: val };
+    // First save of a row from the reps/seconds field: keep the weight shown
+    // (prefilled or typed), or the new row would store weight = null.
+    if (!log && field !== 'weight_kg') {
+      const w = parseNum(weightRefs.current[i]?.value ?? '', false);
+      if (w !== null) patch.weight_kg = w;
+    }
     try {
-      await onSave(i, { [field]: val });
+      await onSave(i, patch);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save');
     }

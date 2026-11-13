@@ -12,7 +12,7 @@ import { dayInfo } from '@/lib/program';
 import type { CoachContext, CoachPage } from '@/lib/ai/coach';
 import { useActiveProgram, useLocalUserId, useProgramSessions, useProgress, useSessionBundle, useSettings } from '@/lib/local/hooks';
 
-const PAGES: CoachPage[] = ['today', 'program', 'history', 'settings'];
+const PAGES: CoachPage[] = ['today', 'strength', 'history', 'settings'];
 
 export function useCoachContext(): CoachContext {
   const pathname = usePathname();

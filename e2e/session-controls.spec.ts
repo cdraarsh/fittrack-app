@@ -48,6 +48,14 @@ test('an accidental start can be reset from Stop; the coach floats on every page
   await expect(page.getByLabel(/^Set \d+ reps$/).first()).toHaveValue('');
   await expect(page.getByRole('button', { name: /^Set \d+ done$/ })).toHaveCount(0);
 
+  // Reps first, then tick: the prefilled weight is saved with the set.
+  await page.getByLabel(/^Set \d+ reps$/).first().fill('9');
+  await page.getByLabel(/^Set \d+ reps$/).first().blur();
+  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
+  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(/^Set \d+ weight$/).first()).not.toHaveValue('');
+
   // Finish later keeps progress.
   await page.getByRole('button', { name: /^Stop$/ }).click();
   await stop.getByRole('button', { name: /Finish later/ }).click();
