@@ -64,6 +64,7 @@ export interface CoachContext {
     setsDone?: number;
     setsTotal?: number;
     nextExercise?: string;
+    paused?: boolean;
   };
 }
 
@@ -100,6 +101,7 @@ export function parseCoachContext(raw: unknown): CoachContext | null {
         setsTotal: cleanInt(s.setsTotal, 0, 500),
         setsDone: cleanInt(s.setsDone, 0, cleanInt(s.setsTotal, 0, 500) ?? 500),
         nextExercise: cleanText(s.nextExercise),
+        ...(s.paused === true && status === 'in_progress' ? { paused: true } : {}),
       };
     }
   }
@@ -112,7 +114,7 @@ export function formatCoachContext(ctx: CoachContext | null): string {
   const lines = [`Screen: ${ctx.page}`];
   const s = ctx.session;
   if (s) {
-    const state = { up_next: 'up next, not started', in_progress: 'in progress', complete: 'complete', locked: 'locked' }[s.status];
+    const state = s.paused ? 'paused (finish later)' : { up_next: 'up next, not started', in_progress: 'in progress', complete: 'complete', locked: 'locked' }[s.status];
     lines.push(`Session: Day ${s.seq} · ${JSON.stringify(s.title)} (${state})`);
     if (s.status === 'in_progress') {
       if (s.elapsedMin !== undefined) lines.push(`Elapsed: ${s.elapsedMin} min`);

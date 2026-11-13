@@ -70,6 +70,8 @@ export async function pull(db: FitDB, client: SupabaseClient, userId: string): P
     const notStarted = sessions.filter((x) => x.status === 'up_next').map((x) => x.id);
     if (notStarted.length) await db.set_logs.where('session_id').anyOf(notStarted).delete();
   });
+  // ...and drop any local pause for them (reset on another device).
+  for (const s of sessions) if (s.status !== 'in_progress') await db.meta.delete(`pause:${s.id}`);
 
   const cursor = (await getMeta<string>(db, 'pull:set_logs')) ?? null;
   const since = cursor ? new Date(ms(cursor) - CURSOR_OVERLAP_MS).toISOString() : '1970-01-01T00:00:00Z';

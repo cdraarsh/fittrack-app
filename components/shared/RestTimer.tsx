@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playCue } from '@/lib/audio/hooks';
+import { setOverlay, useOverlays } from '@/lib/ui/overlays';
 import { dueRestCues, remainingSeconds, REST_STORAGE_KEY, startRest, type RestState } from '@/lib/audio/rest';
 
 /** Start (or restart) the rest timer from anywhere. */
@@ -88,29 +89,58 @@ export default function RestTimer() {
     if (rest && now >= rest.endsAt + 2000) dismiss();
   }, [rest, now, dismiss]);
 
+  const overlays = useOverlays();
+  useEffect(() => {
+    setOverlay({ resting: !!rest });
+  }, [rest]);
+
+  const adjust = (deltaS: number) => {
+    setRest((r) => {
+      if (!r) return r;
+      const endsAt = Math.max(Date.now() + 1000, r.endsAt + deltaS * 1000);
+      const next = { endsAt, total: Math.max(1, r.total + deltaS) };
+      save(next);
+      fired.current = new Set();
+      return next;
+    });
+  };
+
   if (!rest) return null;
   const remaining = remainingSeconds(rest, now);
-  const pct = rest.total > 0 ? (remaining / rest.total) * 100 : 0;
+  const pct = rest.total > 0 ? Math.min(100, (remaining / rest.total) * 100) : 0;
   const isDone = remaining === 0;
   const isLow = pct < 30;
 
+  // The dock owns the bottom of the screen just above the nav. It hides while
+  // the keyboard is up (iOS moves fixed elements unpredictably); cues still play.
   return (
     <div
-      role="timer"
-      aria-live="polite"
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-bg2 border border-accent/25 rounded-xl px-4 py-2.5 shadow-lg min-w-[200px]"
+      className={`fixed left-1/2 -translate-x-1/2 w-full max-w-app z-40 bottom-[calc(56px+env(safe-area-inset-bottom))] bg-bg1/95 backdrop-blur border-t border-accent/25 px-4 h-16 flex items-center gap-3 ${
+        overlays.inputFocused ? 'hidden' : ''
+      }`}
     >
-      <div>
-        <div className="text-[11px] text-text3 font-semibold">Rest</div>
-        <div className={`font-condensed text-2xl font-black ${isDone ? 'text-accent' : isLow ? 'text-danger' : 'text-accent'}`}>
+      <div className="min-w-[64px]">
+        <div className="text-xs text-text3 font-semibold">Rest</div>
+        <div
+          role="timer"
+          aria-live="off"
+          aria-label={isDone ? 'Rest over' : `Rest ${Math.floor(remaining / 60)} minutes ${remaining % 60} seconds left`}
+          className={`font-condensed text-2xl font-black tabular-nums leading-none ${isDone ? 'text-accent' : isLow ? 'text-warn' : 'text-accent'}`}
+        >
           {isDone ? 'Go!' : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`}
         </div>
       </div>
-      <div className="flex-1 h-1.5 bg-bg3 rounded-full overflow-hidden min-w-[60px]">
-        <div className={`h-full rounded-full transition-[width] duration-200 ${isLow ? 'bg-danger' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+      <div className="flex-1 h-1.5 bg-bg3 rounded-full overflow-hidden" aria-hidden>
+        <div className={`h-full rounded-full transition-[width] duration-200 ${isLow ? 'bg-warn' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
       </div>
-      <button onClick={dismiss} aria-label="Dismiss rest timer" className="text-text3 hover:text-text2 text-lg leading-none">
-        ✕
+      <button onClick={() => adjust(-15)} aria-label="15 seconds less rest" className="h-11 min-w-[44px] px-2 rounded-lg bg-bg3 border border-border text-sm font-bold">
+        −15
+      </button>
+      <button onClick={() => adjust(15)} aria-label="15 seconds more rest" className="h-11 min-w-[44px] px-2 rounded-lg bg-bg3 border border-border text-sm font-bold">
+        +15
+      </button>
+      <button onClick={dismiss} aria-label="Dismiss rest timer" className="h-11 px-3 rounded-lg text-sm font-bold text-text2">
+        Skip
       </button>
     </div>
   );

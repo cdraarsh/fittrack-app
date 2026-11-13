@@ -9,6 +9,8 @@ import { getDb } from '@/lib/local/db';
 import { updateSettings } from '@/lib/local/actions';
 import { requestSync, useLocalUserId, useOutboxCounts, useSettings, useSyncStatus } from '@/lib/local/hooks';
 import type { UserSettings } from '@/lib/program/types';
+import { describeOp, humanizeError, refusalReason } from '@/lib/ui/errors';
+import type { OutboxOp } from '@/lib/local/db';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -190,25 +192,62 @@ function SyncCard() {
           </>
         ) : null}
       </div>
-      {showFailed && counts?.failed.length ? (
-        <ul className="mt-2 space-y-1 text-xs text-text3">
-          {counts.failed.map((o) => (
-            <li key={o.id}>
-              {o.payload.kind === 'rpc' ? o.payload.fn : `${o.payload.kind} ${o.payload.table}`}: {o.last_error}
-            </li>
-          ))}
-          <li>
-            <button
-              className="text-text2 underline"
-              onClick={() => void getDb().outbox.where('status').equals('failed').delete().then(() => requestSync())}
-            >
-              Discard and reload from server
-            </button>
-          </li>
-        </ul>
-      ) : null}
-      {status.lastError && status.state === 'error' && <div className="text-xs text-danger mt-1">{status.lastError}</div>}
+      {showFailed && counts?.failed.length ? <FailedList failed={counts.failed} /> : null}
+      {status.lastError && status.state === 'error' && (
+        <div className="text-xs text-text2 mt-1">
+          {humanizeError(status.lastError)}
+          <details className="mt-1 text-text3">
+            <summary className="cursor-pointer">Details</summary>
+            <code className="break-all">{status.lastError}</code>
+          </details>
+        </div>
+      )}
     </Card>
+  );
+}
+
+function FailedList({ failed }: { failed: OutboxOp[] }) {
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <ul className="mt-2 space-y-1.5 text-xs text-text2">
+      {failed.map((o) => (
+        <li key={o.id}>
+          {describeOp(o.payload)}: {refusalReason(o.last_error)}.
+          {o.last_error && (
+            <details className="text-text3">
+              <summary className="cursor-pointer">Details</summary>
+              <code className="break-all">{o.last_error}</code>
+            </details>
+          )}
+        </li>
+      ))}
+      <li className="flex gap-3 pt-1">
+        <button
+          className="text-accent underline min-h-[44px]"
+          onClick={() =>
+            void getDb()
+              .outbox.where('status')
+              .equals('failed')
+              .modify({ status: 'pending', attempts: 0 })
+              .then(() => requestSync())
+          }
+        >
+          Retry
+        </button>
+        {confirm ? (
+          <button
+            className="text-danger underline min-h-[44px]"
+            onClick={() => void getDb().outbox.where('status').equals('failed').delete().then(() => requestSync())}
+          >
+            Yes, discard and reload from server
+          </button>
+        ) : (
+          <button className="text-text2 underline min-h-[44px]" onClick={() => setConfirm(true)}>
+            Discard…
+          </button>
+        )}
+      </li>
+    </ul>
   );
 }
 

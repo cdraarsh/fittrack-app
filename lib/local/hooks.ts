@@ -10,6 +10,7 @@ import type { ProgramSession, SessionExercise, SetLog } from '@/lib/program/type
 import { ensureSettings, lastWeightFor, refreshProgress, seedExercises } from './actions';
 import { getDb, getMeta, setMeta } from './db';
 import { OUTBOX_EVENT, pendingCount } from './outbox';
+import { pauseKey, type PauseState } from './pause';
 import { syncNow } from './sync';
 
 // ─── Sync status store ────────────────────────────────────────────────────────
@@ -262,4 +263,10 @@ export function useBodyWeights(userId: string | null | undefined) {
     if (!userId) return [];
     return (await getDb().body_weights.where('date').above('').toArray()).filter((b) => b.user_id === userId).sort((a, b) => b.date.localeCompare(a.date));
   }, [userId]);
+}
+
+// ─── Local pause ("Finish later") ─────────────────────────────────────────────
+
+export function usePause(sessionId: string | null | undefined): PauseState | undefined {
+  return useLiveQuery(async () => (sessionId ? ((await getDb().meta.get(pauseKey(sessionId)))?.value as PauseState | undefined) : undefined), [sessionId]);
 }

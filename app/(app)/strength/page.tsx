@@ -12,6 +12,7 @@ import { liftProgress, type LiftPoint } from '@/lib/strength/lifts';
 import { buildRecovery } from '@/lib/ai/stats';
 import { localDate } from '@/lib/program';
 import type { GarminDailyRow } from '@/lib/ai/types';
+import { humanizeError } from '@/lib/ui/errors';
 
 type Tab = 'lifts' | 'garmin' | 'recovery';
 const TABS: { id: Tab; label: string }[] = [
@@ -113,7 +114,7 @@ function LiftsTab() {
             </div>
             <div className="text-right">
               <div className="font-condensed text-xl font-black tabular-nums leading-none">{l.latest.e1rm}</div>
-              <div className="text-[10px] text-text3 uppercase tracking-wider">est. 1RM kg</div>
+              <div className="text-xs text-text3 uppercase tracking-wider">est. 1RM kg</div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
@@ -210,7 +211,7 @@ function GarminTab() {
 
   if (load.state === 'loading') return <Spinner />;
   if (load.state === 'offline') return <OfflineNote />;
-  if (load.state === 'error') return <Empty icon={<Watch size={20} />} text={`Couldn't load Garmin workouts (${load.message}).`} />;
+  if (load.state === 'error') return <Empty icon={<Watch size={20} />} text={`Couldn't load Garmin workouts. ${humanizeError(load.message) ?? ''}`} />;
   if (load.data.length === 0) {
     return (
       <Empty
@@ -243,14 +244,14 @@ function GarminTab() {
 function MatchBadge({ status, count }: { status: string | null; count: number | null }) {
   if (status === 'review') {
     return (
-      <Link href="/settings" className="text-[11px] font-bold text-warn whitespace-nowrap">
+      <Link href="/settings" className="text-xs font-bold text-warn whitespace-nowrap">
         Needs review
       </Link>
     );
   }
-  if (status === 'matched') return <span className="text-[11px] font-bold text-accent whitespace-nowrap">{count ?? 0} sets matched</span>;
-  if (status === 'no_session') return <span className="text-[11px] text-text3 whitespace-nowrap">No session</span>;
-  if (status === 'error') return <span className="text-[11px] text-danger whitespace-nowrap">Sync error</span>;
+  if (status === 'matched') return <span className="text-xs font-bold text-accent whitespace-nowrap">{count ?? 0} sets matched</span>;
+  if (status === 'no_session') return <span className="text-xs text-text3 whitespace-nowrap">No session</span>;
+  if (status === 'error') return <span className="text-xs text-danger whitespace-nowrap">Sync error</span>;
   return null;
 }
 
@@ -281,7 +282,7 @@ function RecoveryTab() {
 
   if (load.state === 'loading') return <Spinner />;
   if (load.state === 'offline') return <OfflineNote />;
-  if (load.state === 'error') return <Empty icon={<HeartPulse size={20} />} text={`Couldn't load recovery data (${load.message}).`} />;
+  if (load.state === 'error') return <Empty icon={<HeartPulse size={20} />} text={`Couldn't load recovery data. ${humanizeError(load.message) ?? ''}`} />;
   const rec = buildRecovery(load.data, today);
   if (!rec) {
     return (
@@ -298,7 +299,7 @@ function RecoveryTab() {
   return (
     <div className="space-y-3">
       <div className="bg-bg2 border border-border rounded-[10px] p-4">
-        <div className="text-[11px] font-bold uppercase tracking-widest text-text3">
+        <div className="text-xs font-bold uppercase tracking-widest text-text3">
           Readiness · {fmtDate(rec.date)}
           {rec.stale ? ' · not synced today' : ''}
         </div>
@@ -308,7 +309,7 @@ function RecoveryTab() {
       <table className="w-full text-sm bg-bg2 border border-border rounded-[10px] overflow-hidden">
         <caption className="sr-only">Latest Garmin recovery metrics against your 7- and 28-day averages</caption>
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-text3">
+          <tr className="text-xs uppercase tracking-wider text-text3">
             <th scope="col" className="text-left font-bold px-3 py-2">Metric</th>
             <th scope="col" className="text-right font-bold px-2 py-2">Latest</th>
             <th scope="col" className="text-right font-bold px-2 py-2">7-day</th>

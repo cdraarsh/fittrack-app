@@ -21,7 +21,8 @@ const config: Config = {
         text1:   '#f1f5f9',
         text2:   '#94a3b8',
         text3:   '#8090a5', // ≥4.5:1 on every bg token (WCAG AA)
-        danger:  '#ef4444',
+        danger:  '#f87171', // ≥5.5:1 on every bg token
+        'border-strong': '#64748b', // input outlines, ≥3:1 on bg3 (WCAG 1.4.11)
         warn:    '#f59e0b',
         info:    '#60a5fa',
         purple:  '#a78bfa',

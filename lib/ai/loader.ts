@@ -28,7 +28,7 @@ import type {
 
 const COLS = {
   programs: 'id,name,start_date,sessions_per_week,weeks,status',
-  sessions: 'id,program_id,seq,week,title,status,completed_at',
+  sessions: 'id,program_id,seq,week,title,status,completed_at,template_key,is_deload',
   sessionExercises: 'id,session_id,exercise_id,position,sets,rep_lo,rep_hi,target_kg',
   setLogs: 'id,session_exercise_id,set_index,weight_kg,reps,seconds,rpe,done,source,updated_at',
   exercises: 'id,name,pattern,is_timed',

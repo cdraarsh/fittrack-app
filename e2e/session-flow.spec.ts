@@ -9,8 +9,8 @@ const DAY1 = new Date('2026-11-10T09:00:00');
 const DAY2 = new Date('2026-11-11T09:00:00');
 
 async function logAllSets(page: Page) {
-  const weights = page.getByLabel(/^Set \d+ weight$/);
-  const reps = page.getByLabel(/^Set \d+ reps$/);
+  const weights = page.getByLabel(/ set \d+ weight$/);
+  const reps = page.getByLabel(/ set \d+ reps$/);
   const n = await reps.count();
   for (let i = 0; i < n; i++) {
     await weights.nth(i).fill('20');
@@ -21,7 +21,7 @@ async function logAllSets(page: Page) {
 }
 
 async function tickAll(page: Page) {
-  const ticks = page.getByRole('button', { name: /^Tick set \d+$/ });
+  const ticks = page.getByRole('button', { name: /^Tick .+ set \d+$/ });
   // Tick one set at a time and wait for it to register, like a person would.
   for (let guard = 0; guard < 50 && (await ticks.count()) > 0; guard++) {
     const btn = await ticks.first().elementHandle();
@@ -39,7 +39,7 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await expect(page.getByRole('heading', { name: /Day 1 · .* is up next/ })).toBeVisible();
 
   // Nothing can be logged until Start: no set inputs are shown yet.
-  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await expect(page.getByLabel(/ set \d+ weight$/)).toHaveCount(0);
   await page.getByRole('button', { name: /^Start Day 1$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
   await expect(page.getByRole('timer', { name: 'Session time' })).toBeVisible();
@@ -48,7 +48,7 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   const total = await logAllSets(page);
   expect(total).toBeGreaterThan(0);
   await page.reload();
-  await expect(page.getByLabel(/^Set \d+ reps$/).first()).toHaveValue('10');
+  await expect(page.getByLabel(/ set \d+ reps$/).first()).toHaveValue('10');
 
   // Airplane mode: ticking still works and is queued.
   await context.setOffline(true);
@@ -60,7 +60,7 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
 
   // Day 1 done → Day 2 is the next session but locked until tomorrow.
   await expect(page.getByText(/Unlocks/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Tick .+ set \d+$/ })).toHaveCount(0);
 
   await context.setOffline(false);
 

@@ -35,13 +35,13 @@ test('app shell opens offline and a set can be logged', async ({ page, context }
   }
 
   await page.getByRole('button', { name: /^Start program$/ }).click();
-  await page.getByLabel(/^Set \d+ weight$/).first().fill('40');
-  await page.getByLabel(/^Set \d+ reps$/).first().fill('9');
-  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
+  await page.getByLabel(/ set \d+ weight$/).first().fill('40');
+  await page.getByLabel(/ set \d+ reps$/).first().fill('9');
+  await page.getByRole('button', { name: /^Tick .+ set \d+$/ }).first().click();
   await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
 
   // Still there after a reload with no network.
   await page.reload();
-  await expect(page.getByLabel(/^Set \d+ reps$/).first()).toHaveValue('9');
+  await expect(page.getByLabel(/ set \d+ reps$/).first()).toHaveValue('9');
   await expect(page.getByText(/Offline/)).toBeVisible();
 });

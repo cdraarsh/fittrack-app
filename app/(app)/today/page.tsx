@@ -9,7 +9,8 @@ import SessionLogger, { ruleMessage } from '@/components/workout/SessionLogger';
 import { toast } from '@/components/shared/Toast';
 import { getDb } from '@/lib/local/db';
 import { saveBodyWeight, startProgram } from '@/lib/local/actions';
-import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, useProgramSessions, useProgress, useSettings, useSyncStatus } from '@/lib/local/hooks';
+import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, usePause, useProgramSessions, useProgress, useSettings, useSyncStatus } from '@/lib/local/hooks';
+import { effectivePause, isPaused } from '@/lib/local/pause';
 import { addDays, dayInfo, localDate } from '@/lib/program';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -35,6 +36,7 @@ export default function TodayPage() {
   const tz = settings?.timezone ?? 'UTC';
   const progress = useProgress(sessions, settings?.unlock_rule ?? 'next_calendar_day', tz);
   const sync = useSyncStatus();
+  const currentPause = usePause(progress?.current?.id);
   const everSynced = useLiveQuery(async () => !!(await getDb().meta.get('last_synced_at')), [], undefined);
   const [starting, setStarting] = useState(false);
 
@@ -92,12 +94,17 @@ export default function TodayPage() {
       {current ? (
         <section aria-labelledby="up-next">
           <div className="mb-3">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-text3">
+            <div className="text-xs font-bold uppercase tracking-widest text-text3">
               Cycle {dayInfo(current).cycle} · Week {current.week} · {current.phase}
               {current.is_deload ? ' · Deload' : ''}
             </div>
             <h2 id="up-next" className="font-condensed text-2xl font-black leading-tight">
-              {dayInfo(current).label} {current.status === 'in_progress' ? 'in progress' : 'is up next'}
+              {dayInfo(current).label}{' '}
+              {current.status === 'in_progress'
+                ? isPaused(effectivePause(currentPause, current.started_at))
+                  ? '— paused'
+                  : 'in progress'
+                : 'is up next'}
             </h2>
             {current.status === 'up_next' && (
               <p className="text-xs text-text2 mt-1">
@@ -110,7 +117,7 @@ export default function TodayPage() {
       ) : waiting ? (
         <section className="space-y-3">
           <div className="bg-bg2 border border-border rounded-card p-4">
-            <div className="flex items-center gap-2 text-text3 text-[11px] font-bold uppercase tracking-widest mb-1">
+            <div className="flex items-center gap-2 text-text3 text-xs font-bold uppercase tracking-widest mb-1">
               <Lock size={12} /> Locked
             </div>
             <h2 className="font-condensed text-2xl font-black leading-tight">
@@ -121,7 +128,7 @@ export default function TodayPage() {
               {sessions[waiting.seq - 2] ? ` Nice work on ${dayInfo(sessions[waiting.seq - 2]).label}.` : ''}
             </p>
           </div>
-          <div className="text-[11px] font-bold uppercase tracking-widest text-text3">Preview</div>
+          <div className="text-xs font-bold uppercase tracking-widest text-text3">Preview</div>
           <SessionLogger sessionId={waiting.id} userId={userId} preview />
         </section>
       ) : (
