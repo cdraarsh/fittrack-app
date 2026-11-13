@@ -13,6 +13,8 @@ import {
   countUserMessagesOn,
   resolveDailyCap,
   toModelHistory,
+  parseCoachContext,
+  formatCoachContext,
 } from '@/lib/ai/coach';
 import {
   createCoachDataSource,
@@ -70,7 +72,8 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { userId, db } = authed;
 
-  const body = (await req.json().catch(() => null)) as { message?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { message?: unknown; context?: unknown } | null;
+  const liveContext = formatCoachContext(parseCoachContext(body?.context));
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400 });
   if (message.length > MAX_COACH_MESSAGE_CHARS) {
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
 
     const result = streamText({
       model,
-      system: buildCoachSystem(pack),
+      system: buildCoachSystem(pack, liveContext),
       messages: [...history, { role: 'user', content: message }],
       tools: createCoachTools(userId, createCoachDataSource(db, today)),
       stopWhen: stepCountIs(5),

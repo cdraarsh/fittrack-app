@@ -23,6 +23,23 @@ async function fetchAll<T>(make: () => Query): Promise<T[]> {
 
 const ms = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : 0);
 
+/** A local write (Start, Reset, a set) landed while the pull was in flight. */
+export class PullAborted extends Error {
+  constructor() {
+    super('pull_aborted');
+    this.name = 'PullAborted';
+  }
+}
+
+/**
+ * Pull results only apply while nothing is pending: anything the user did
+ * during the pull is newer than what we fetched, so drop the pull and let the
+ * next sync flush first. Call inside a transaction that includes db.outbox.
+ */
+async function assertNothingPending(db: FitDB) {
+  if ((await db.outbox.filter((o) => o.status === 'pending').count()) > 0) throw new PullAborted();
+}
+
 /**
  * Pull server state into Dexie. Only call with an empty outbox (no pending
  * ops): server rows are then authoritative for programs/sessions/exercises,
@@ -43,10 +60,15 @@ export async function pull(db: FitDB, client: SupabaseClient, userId: string): P
   const programs = await fetchAll<Program>(() => client.from('programs').select('*').eq('user_id', userId).order('created_at'));
   const sessions = await fetchAll<ProgramSession>(() => client.from('program_sessions').select('*').eq('user_id', userId).order('id'));
   const ses = await fetchAll<SessionExercise>(() => client.from('session_exercises').select('*').eq('user_id', userId).order('id'));
-  await db.transaction('rw', [db.programs, db.program_sessions, db.session_exercises], async () => {
+  await db.transaction('rw', [db.programs, db.program_sessions, db.session_exercises, db.set_logs, db.outbox], async () => {
+    await assertNothingPending(db);
     await db.programs.bulkPut(programs);
     await db.program_sessions.bulkPut(sessions);
     await db.session_exercises.bulkPut(ses);
+    // A session the server has as up next has no sets (reset here or on another
+    // device, and the server refuses client sets before Start): drop stale local ones.
+    const notStarted = sessions.filter((x) => x.status === 'up_next').map((x) => x.id);
+    if (notStarted.length) await db.set_logs.where('session_id').anyOf(notStarted).delete();
   });
 
   const cursor = (await getMeta<string>(db, 'pull:set_logs')) ?? null;
@@ -55,8 +77,11 @@ export async function pull(db: FitDB, client: SupabaseClient, userId: string): P
     client.from('set_logs').select('*').eq('user_id', userId).gt('updated_at', since).order('updated_at').order('id'),
   );
   let maxSeen = cursor;
-  await db.transaction('rw', db.set_logs, async () => {
+  const upNext = new Set(sessions.filter((x) => x.status === 'up_next').map((x) => x.id));
+  await db.transaction('rw', [db.set_logs, db.outbox], async () => {
+    await assertNothingPending(db);
     for (const remote of logs) {
+      if (upNext.has(remote.session_id)) continue;
       const local =
         (await db.set_logs.get(remote.id)) ??
         (await db.set_logs.where('[session_exercise_id+set_index]').equals([remote.session_exercise_id, remote.set_index]).first());
@@ -69,7 +94,8 @@ export async function pull(db: FitDB, client: SupabaseClient, userId: string): P
   if (maxSeen) await setMeta(db, 'pull:set_logs', maxSeen);
 
   const weights = await fetchAll<BodyWeight>(() => client.from('body_weights').select('*').eq('user_id', userId).order('date'));
-  await db.transaction('rw', db.body_weights, async () => {
+  await db.transaction('rw', [db.body_weights, db.outbox], async () => {
+    await assertNothingPending(db);
     for (const remote of weights) {
       const local = await db.body_weights.get([userId, remote.date]);
       if (!local || ms(remote.updated_at) >= ms(local.updated_at)) await db.body_weights.put({ ...remote, kg: Number(remote.kg) });
@@ -96,9 +122,13 @@ export async function syncNow(db: FitDB, client: SupabaseClient, userId: string)
   const f = await flush(db, client);
   let pulled = false;
   if (!f.blocked && (await pendingCount(db)) === 0) {
-    await pull(db, client, userId);
-    pulled = true;
-    await setMeta(db, 'last_synced_at', new Date().toISOString());
+    try {
+      await pull(db, client, userId);
+      pulled = true;
+      await setMeta(db, 'last_synced_at', new Date().toISOString());
+    } catch (e) {
+      if (!(e instanceof PullAborted)) throw e; // the next sync flushes the new write, then pulls
+    }
   }
   await refreshProgress(db, userId);
   return { ...f, pulled };

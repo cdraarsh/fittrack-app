@@ -9,6 +9,11 @@ export function startRestTimer(seconds: number) {
   window.dispatchEvent(new CustomEvent('fittrack:rest', { detail: seconds }));
 }
 
+/** Cancel a running rest (session reset or completed). */
+export function stopRestTimer() {
+  window.dispatchEvent(new CustomEvent('fittrack:rest', { detail: 0 }));
+}
+
 function load(): RestState | null {
   try {
     const raw = localStorage.getItem(REST_STORAGE_KEY);
@@ -46,7 +51,13 @@ export default function RestTimer() {
     if (restored && restored.endsAt > Date.now()) setRest(restored);
     else save(null);
     const handler = (e: Event) => {
-      const r = startRest((e as CustomEvent<number>).detail);
+      const seconds = (e as CustomEvent<number>).detail;
+      if (!(seconds > 0)) {
+        setRest(null);
+        save(null);
+        return;
+      }
+      const r = startRest(seconds);
       fired.current = new Set();
       setRest(r);
       save(r);
@@ -87,7 +98,7 @@ export default function RestTimer() {
     <div
       role="timer"
       aria-live="polite"
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-bg2 border border-accent/25 rounded-xl px-4 py-2.5 shadow-lg min-w-[200px]"
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-bg2 border border-accent/25 rounded-xl px-4 py-2.5 shadow-lg min-w-[200px]"
     >
       <div>
         <div className="text-[11px] text-text3 font-semibold">Rest</div>

@@ -18,6 +18,8 @@ export interface TemplateExercise {
 export interface SessionTemplate {
   key: string;
   title: string;
+  /** Short exercise category shown as "Day N · <category>". */
+  category: string;
   cardio: string | null;
   exercises: TemplateExercise[];
 }
@@ -60,6 +62,7 @@ export const FOUR_DAY_SPLIT: ProgramTemplate = {
   sessions: {
     upper_a: {
       key: 'upper_a',
+      category: 'Upper · Push',
       title: 'Upper A — Push Focus',
       cardio: 'Incline treadmill walk (10–12% grade, 5.5 kph) — 15 min',
       exercises: [
@@ -73,6 +76,7 @@ export const FOUR_DAY_SPLIT: ProgramTemplate = {
     },
     lower_a: {
       key: 'lower_a',
+      category: 'Lower · Quads',
       title: 'Lower A — Quad Focus',
       cardio: 'Stationary bike (moderate) — 15 min',
       exercises: [
@@ -86,6 +90,7 @@ export const FOUR_DAY_SPLIT: ProgramTemplate = {
     },
     upper_b: {
       key: 'upper_b',
+      category: 'Upper · Pull',
       title: 'Upper B — Pull Focus',
       cardio: 'Incline treadmill walk — 15 min',
       exercises: [
@@ -99,6 +104,7 @@ export const FOUR_DAY_SPLIT: ProgramTemplate = {
     },
     lower_b: {
       key: 'lower_b',
+      category: 'Lower · Hinge',
       title: 'Lower B — Hinge Focus',
       cardio: 'Stationary bike — 15 min',
       exercises: [

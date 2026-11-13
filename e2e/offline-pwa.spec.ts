@@ -22,13 +22,13 @@ test('app shell opens offline and a set can be logged', async ({ page, context }
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await page.evaluate(() => navigator.serviceWorker.controller!.postMessage({ type: 'WARM_APP_SHELL' }));
   await expect
-    .poll(() => page.evaluate(async () => (await Promise.all(['/today', '/program', '/history', '/settings'].map((p) => caches.match(p)))).every(Boolean)))
+    .poll(() => page.evaluate(async () => (await Promise.all(['/today', '/strength', '/history', '/settings'].map((p) => caches.match(p)))).every(Boolean)))
     .toBe(true);
 
   await context.setOffline(true);
 
   // Full page loads of every app route work from the cache.
-  for (const path of ['/program', '/history', '/settings', '/today']) {
+  for (const path of ['/strength', '/history', '/settings', '/today']) {
     const res = await page.goto(path);
     expect(res?.ok() ?? true).toBe(true);
     await expect(page.getByRole('link', { name: 'Today', exact: true }).first()).toBeVisible();

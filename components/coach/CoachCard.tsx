@@ -4,7 +4,8 @@
 // streams replies from POST /api/coach (plain text). Mount anywhere (Today).
 
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, X } from 'lucide-react';
+import type { CoachContext } from '@/lib/ai/coach';
 
 interface ChatMessage {
   id?: string;
@@ -20,7 +21,17 @@ interface CapInfo {
 
 const OPENER = 'Ask about today’s session, a lift’s trend, recovery, or whether to swap or deload.';
 
-export default function CoachCard({ className = '' }: { className?: string }) {
+interface Props {
+  className?: string;
+  /** Live app state sent with each message (floating co-pilot). */
+  context?: CoachContext | null;
+  /** One-tap prompts shown above the input. */
+  suggestions?: string[];
+  onClose?: () => void;
+  autoFocus?: boolean;
+}
+
+export default function CoachCard({ className = '', context = null, suggestions = [], onClose, autoFocus = false }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [cap, setCap] = useState<CapInfo | null>(null);
   const [available, setAvailable] = useState(true);
@@ -50,10 +61,14 @@ export default function CoachCard({ className = '' }: { className?: string }) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
 
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
+
   const capped = cap !== null && cap.remaining <= 0;
 
-  async function send() {
-    const msg = input.trim();
+  async function send(text?: string) {
+    const msg = (text ?? input).trim();
     if (!msg || loading || capped) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setError('You’re offline. The coach needs a connection.');
@@ -68,7 +83,7 @@ export default function CoachCard({ className = '' }: { className?: string }) {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
+        body: JSON.stringify({ message: msg, context }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -129,6 +144,11 @@ export default function CoachCard({ className = '' }: { className?: string }) {
             {cap.remaining} message{cap.remaining !== 1 ? 's' : ''} left today
           </span>
         )}
+        {onClose && (
+          <button onClick={onClose} aria-label="Close coach" className={`${cap ? 'ml-2' : 'ml-auto'} p-1 -mr-1 text-text2`}>
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       <div ref={listRef} className="px-4 py-3 space-y-2.5 max-h-80 overflow-y-auto" aria-live="polite">
@@ -151,12 +171,28 @@ export default function CoachCard({ className = '' }: { className?: string }) {
         {capped && <div className="text-xs text-text3 text-center pt-1">Daily limit reached. Back tomorrow.</div>}
       </div>
 
+      {!capped && suggestions.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto px-3 pb-2 no-scrollbar">
+          {suggestions.map((q) => (
+            <button
+              key={q}
+              type="button"
+              disabled={loading}
+              onClick={() => void send(q)}
+              className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full bg-bg3 border border-border text-text2 disabled:opacity-40"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
       {!capped && (
         <form
           className="flex items-center gap-2 px-3 pb-3"
           onSubmit={e => {
             e.preventDefault();
-            send();
+            void send();
           }}
         >
           <input

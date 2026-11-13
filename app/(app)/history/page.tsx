@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import Spinner from '@/components/app/Spinner';
 import SessionLogger from '@/components/workout/SessionLogger';
 import { useCompletedSessions, useLocalUserId, useSettings } from '@/lib/local/hooks';
+import { dayInfo } from '@/lib/program';
 
 /** Completed sessions, newest first. Open one to fix a typo (done sets stay done). */
 export default function HistoryPage() {
@@ -32,10 +33,10 @@ export default function HistoryPage() {
             <button className="w-full flex items-center gap-3 px-3 py-3 text-left" onClick={() => setOpen(expanded ? null : s.id)} aria-expanded={expanded}>
               <div className="flex-1">
                 <div className="text-sm font-semibold">
-                  Day {s.seq} · {s.title}
+                  {dayInfo(s).label}
                 </div>
                 <div className="text-xs text-text3">
-                  {fmt(s.completed_at)} · week {s.week}
+                  {fmt(s.completed_at)} · cycle {dayInfo(s).cycle}
                   {s.cardio_done ? ' · cardio ✓' : ''}
                 </div>
               </div>

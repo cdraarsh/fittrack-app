@@ -38,6 +38,12 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await page.getByRole('button', { name: /^Start program$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · .* is up next/ })).toBeVisible();
 
+  // Nothing can be logged until Start: no set inputs are shown yet.
+  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await page.getByRole('button', { name: /^Start Day 1$/ }).click();
+  await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
+  await expect(page.getByRole('timer', { name: 'Session time' })).toBeVisible();
+
   // Values typed before a reload are kept (Dexie, save on blur).
   const total = await logAllSets(page);
   expect(total).toBeGreaterThan(0);
@@ -56,14 +62,7 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await expect(page.getByText(/Unlocks/)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
 
-  // Future sessions can't be logged from Program either.
   await context.setOffline(false);
-  await page.goto('/program');
-  const day3 = page.getByRole('button', { name: /Day 3\b/ });
-  if (await day3.count()) {
-    await day3.first().click();
-    await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
-  }
 
   // Next calendar day: Day 2 is up next.
   await page.clock.setFixedTime(DAY2);

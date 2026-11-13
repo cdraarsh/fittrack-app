@@ -10,7 +10,7 @@ import { getMeta, setMeta, type FitDB } from './db';
 import { enqueue } from './outbox';
 
 export class LocalRuleError extends Error {
-  constructor(public code: 'locked' | 'incomplete' | 'not_found' | 'session_complete' | 'cannot_untick' | 'active_program_exists' | 'swap_not_allowed') {
+  constructor(public code: 'locked' | 'incomplete' | 'not_found' | 'session_complete' | 'cannot_untick' | 'active_program_exists' | 'swap_not_allowed' | 'not_started') {
     super(code);
     this.name = 'LocalRuleError';
   }
@@ -154,7 +154,13 @@ export type SetPatch = Partial<Pick<SetLog, 'weight_kg' | 'reps' | 'seconds' | '
 // Set writes run one at a time: each is a read-modify-write of the same row
 // (and may advance the session), so two quick saves — blur on reps then tick,
 // or weight then reps — must not both start from the old row and drop a field.
+// Start / Reset / Complete share the queue, so a save can't straddle a reset.
 let setWriteQueue: Promise<unknown> = Promise.resolve();
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = setWriteQueue.then(fn);
+  setWriteQueue = run.catch(() => undefined);
+  return run;
+}
 
 export function saveSet(
   db: FitDB,
@@ -162,9 +168,7 @@ export function saveSet(
   args: { sessionExerciseId: string; setIndex: number; patch: SetPatch },
   now?: Date,
 ): Promise<SetLog> {
-  const run = setWriteQueue.then(() => saveSetNow(db, userId, args, now ?? new Date()));
-  setWriteQueue = run.catch(() => undefined);
-  return run;
+  return serial(() => saveSetNow(db, userId, args, now ?? new Date()));
 }
 
 async function saveSetNow(
@@ -179,6 +183,9 @@ async function saveSetNow(
   if (!session) throw new LocalRuleError('not_found');
 
   const existing = await db.set_logs.where('[session_exercise_id+set_index]').equals([se.id, args.setIndex]).first();
+
+  // A session only starts from the Start button, never by typing into a set.
+  if (session.status === 'up_next') throw new LocalRuleError('not_started');
 
   if (session.status === 'complete') {
     if (!existing?.done) throw new LocalRuleError('session_complete');
@@ -253,7 +260,11 @@ export async function updateSessionFields(db: FitDB, sessionId: string, patch: S
  * Complete a session: every prescribed working set must be done. Unlocks the
  * next session locally per the rule; the server re-validates in complete_session().
  */
-export async function completeSession(db: FitDB, userId: string, sessionId: string, now = new Date()): Promise<ProgressionResult<ProgramSession>> {
+export function completeSession(db: FitDB, userId: string, sessionId: string, now = new Date()): Promise<ProgressionResult<ProgramSession>> {
+  return serial(() => completeSessionNow(db, userId, sessionId, now));
+}
+
+async function completeSessionNow(db: FitDB, userId: string, sessionId: string, now: Date): Promise<ProgressionResult<ProgramSession>> {
   const session = await db.program_sessions.get(sessionId);
   if (!session) throw new LocalRuleError('not_found');
   const [ses, logs] = await Promise.all([
@@ -272,6 +283,52 @@ export async function completeSession(db: FitDB, userId: string, sessionId: stri
   if (!wasComplete) {
     await enqueue(db, { kind: 'rpc', fn: 'complete_session', args: { session_id: sessionId, client_completed_at: iso(now) } });
   }
+  return r;
+}
+
+/** Start button: up_next → in_progress (records started_at for the workout timer). */
+export function startSession(db: FitDB, userId: string, sessionId: string, now = new Date()): Promise<ProgressionResult<ProgramSession>> {
+  return serial(() => startSessionNow(db, userId, sessionId, now));
+}
+
+async function startSessionNow(db: FitDB, userId: string, sessionId: string, now: Date): Promise<ProgressionResult<ProgramSession>> {
+  const session = await db.program_sessions.get(sessionId);
+  if (!session) throw new LocalRuleError('not_found');
+  const sessions = await db.program_sessions.where('program_id').equals(session.program_id).toArray();
+  const r = advance(sessions, { type: 'start', sessionId }, await progressionContext(db, userId, now));
+  if (!r.ok) throw new LocalRuleError(r.error === 'locked' ? 'locked' : 'not_found');
+  if (session.status === 'up_next') {
+    await applyProgression(db, session.program_id, r);
+    await enqueue(db, { kind: 'rpc', fn: 'start_session', args: { session_id: sessionId, client_started_at: iso(now) } });
+  }
+  return r;
+}
+
+/**
+ * Undo an accidental start: in_progress → up_next and discard this session's
+ * logged sets (locally, any of their unsent writes, and on the server). A
+ * completed session can't be reset.
+ */
+export function resetSession(db: FitDB, userId: string, sessionId: string, now = new Date()): Promise<ProgressionResult<ProgramSession>> {
+  return serial(() => resetSessionNow(db, userId, sessionId, now));
+}
+
+async function resetSessionNow(db: FitDB, userId: string, sessionId: string, now: Date): Promise<ProgressionResult<ProgramSession>> {
+  const session = await db.program_sessions.get(sessionId);
+  if (!session) throw new LocalRuleError('not_found');
+  const sessions = await db.program_sessions.where('program_id').equals(session.program_id).toArray();
+  const r = advance(sessions, { type: 'reset', sessionId }, await progressionContext(db, userId, now));
+  if (!r.ok) throw new LocalRuleError(r.error === 'already_complete' ? 'session_complete' : r.error === 'locked' ? 'locked' : 'not_found');
+  if (session.status !== 'in_progress') return r;
+
+  await db.transaction('rw', [db.set_logs, db.outbox, db.program_sessions, db.programs], async () => {
+    const logs = await db.set_logs.where('session_id').equals(sessionId).toArray();
+    const keys = new Set(logs.map((l) => `set_logs:${l.id}`));
+    await db.outbox.filter((o) => o.status === 'pending' && !!o.key && keys.has(o.key)).delete();
+    await db.set_logs.bulkDelete(logs.map((l) => l.id));
+    await applyProgression(db, session.program_id, r);
+  });
+  await enqueue(db, { kind: 'rpc', fn: 'reset_session', args: { session_id: sessionId } });
   return r;
 }
 

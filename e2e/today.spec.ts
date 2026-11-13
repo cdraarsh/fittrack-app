@@ -8,11 +8,12 @@ test('Today shows the start button or the session that is up next', async ({ pag
   await expect(start.or(upNext).or(locked)).toBeVisible({ timeout: 15_000 });
 });
 
-test('future sessions are preview-only on Program', async ({ page }) => {
-  await page.goto('/program');
-  const locked = page.getByRole('button', { name: /Day 64/ });
-  if (await locked.isVisible().catch(() => false)) {
-    await locked.click();
-    await expect(page.getByRole('button', { name: /Tick set/ })).toHaveCount(0);
+test('Strength screen has Lifts, Garmin workouts and Recovery tabs; no Program tab', async ({ page }) => {
+  await page.goto('/strength');
+  await expect(page.getByRole('link', { name: 'Program', exact: true })).toHaveCount(0);
+  for (const name of ['Lifts', 'Garmin workouts', 'Recovery']) {
+    await page.getByRole('tab', { name }).click();
+    await expect(page.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tabpanel')).toBeVisible();
   }
 });

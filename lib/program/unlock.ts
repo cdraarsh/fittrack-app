@@ -5,7 +5,8 @@
  *
  *   locked → up_next      previous session complete AND (rule `immediate` OR a
  *                         later local calendar day than its completion)
- *   up_next → in_progress first set logged
+ *   up_next → in_progress Start tapped (or, for watch data, first set logged)
+ *   in_progress → up_next  Reset: an accidental start; its sets are discarded
  *   in_progress → complete every prescribed working set done (checked by caller)
  *
  * No skipping, no reordering: only the first non-complete session can ever be
@@ -30,6 +31,10 @@ export type ProgressionEvent =
   | { type: 'refresh' }
   /** A set was written for this session. */
   | { type: 'log_set'; sessionId: string }
+  /** User tapped Start. */
+  | { type: 'start'; sessionId: string }
+  /** User reset an in-progress session back to up next (caller discards its sets). */
+  | { type: 'reset'; sessionId: string }
   /** User asked to complete; caller says whether every working set is done. */
   | { type: 'complete'; sessionId: string; allWorkingSetsDone: boolean };
 
@@ -40,7 +45,7 @@ export interface ProgressionContext {
   now: Date | string;
 }
 
-export type ProgressionError = 'not_found' | 'locked' | 'incomplete';
+export type ProgressionError = 'not_found' | 'locked' | 'incomplete' | 'already_complete';
 
 export interface ProgressionResult<T extends SessionNode> {
   ok: boolean;
@@ -142,9 +147,15 @@ export function advance<T extends SessionNode>(
 
   if (s.status === 'locked') return finish(false, 'locked');
 
-  if (event.type === 'log_set') {
+  if (event.type === 'log_set' || event.type === 'start') {
     if (s.status === 'up_next') put(i, { status: 'in_progress', started_at: s.started_at ?? nowIso });
     return finish(true);
+  }
+
+  if (event.type === 'reset') {
+    if (s.status === 'complete') return finish(false, 'already_complete');
+    if (s.status === 'in_progress') put(i, { status: 'up_next', started_at: null });
+    return finish(true); // up_next: nothing to undo
   }
 
   // complete
