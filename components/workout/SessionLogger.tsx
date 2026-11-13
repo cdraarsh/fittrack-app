@@ -5,7 +5,7 @@ import { CheckCircle2, Bike, Play, Square, RotateCcw, Pause } from 'lucide-react
 import { getDb } from '@/lib/local/db';
 import { completeSession, resetSession, saveSet, startSession, updateSessionFields, LocalRuleError, type SetPatch } from '@/lib/local/actions';
 import { useLastWeights, useSessionBundle, type SessionBundle } from '@/lib/local/hooks';
-import { missingWorkingSets } from '@/lib/program';
+import { dayInfo, missingWorkingSets } from '@/lib/program';
 import ExerciseBlock, { type LoggerMode } from './ExerciseBlock';
 import { startRestTimer, stopRestTimer } from '../shared/RestTimer';
 import { toast } from '../shared/Toast';
@@ -86,7 +86,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
       await resetSession(getDb(), userId, session.id);
       stopRestTimer();
       setStopOpen(false);
-      toast(`Day ${session.seq} reset — start it when you're ready`);
+      toast(`${dayInfo(session).label} reset — start it when you're ready`);
     } catch (e) {
       toast(ruleMessage(e));
     } finally {
@@ -100,7 +100,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
       const r = await completeSession(getDb(), userId, session.id);
       sound.sessionComplete();
       stopRestTimer();
-      toast(r.programComplete ? 'Program complete!' : `Day ${session.seq} complete`);
+      toast(r.programComplete ? 'Program complete!' : `${dayInfo(session).label} complete`);
       setStopOpen(false);
       onCompleted?.();
     } catch (e) {
@@ -118,7 +118,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
           disabled={busy}
           className="w-full flex items-center justify-center gap-2 py-4 mb-3 rounded-xl font-condensed text-xl font-black bg-accent text-bg active:scale-[0.99] transition-transform disabled:opacity-60"
         >
-          <Play size={20} fill="currentColor" /> Start Day {session.seq}
+          <Play size={20} fill="currentColor" /> Start Day {dayInfo(session).day}
         </button>
       )}
 

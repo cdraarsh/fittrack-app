@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import CoachCard from './CoachCard';
+import { dayInfo } from '@/lib/program';
 import type { CoachContext, CoachPage } from '@/lib/ai/coach';
 import { useActiveProgram, useLocalUserId, useProgramSessions, useProgress, useSessionBundle, useSettings } from '@/lib/local/hooks';
 
@@ -44,7 +45,7 @@ export function useCoachContext(): CoachContext {
       page,
       session: {
         seq: current.seq,
-        title: current.title,
+        title: dayInfo(current).label,
         status: current.status,
         elapsedMin: current.started_at ? Math.max(0, Math.round((minute - new Date(current.started_at).getTime()) / 60_000)) : undefined,
         setsDone,
@@ -64,7 +65,7 @@ function suggestionsFor(ctx: CoachContext): string[] {
       'Running out of time — what to keep?',
     ];
   }
-  if (s?.status === 'up_next') return [`Train Day ${s.seq} or rest today?`, 'How did my last session go?', 'Target loads for today?'];
+  if (s?.status === 'up_next') return [`Train ${s.title.split(' · ')[0]} or rest today?`, 'How did my last session go?', 'Target loads for today?'];
   if (ctx.page === 'history') return ['How are my main lifts trending?', 'Am I training consistently?'];
   return ['How is my progress?', 'Should I deload soon?'];
 }

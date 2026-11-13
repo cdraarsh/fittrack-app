@@ -12,7 +12,7 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 /** App routes that must open offline. Kept in sync with app/(app)/*. */
-const APP_ROUTES = ['/today', '/program', '/history', '/settings'];
+const APP_ROUTES = ['/today', '/strength', '/history', '/settings'];
 const SHELL_CACHE = 'app-shell';
 const SHELL_RSC_CACHE = 'app-shell-rsc';
 

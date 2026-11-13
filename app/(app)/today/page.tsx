@@ -10,7 +10,7 @@ import { toast } from '@/components/shared/Toast';
 import { getDb } from '@/lib/local/db';
 import { saveBodyWeight, startProgram } from '@/lib/local/actions';
 import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, useProgramSessions, useProgress, useSettings, useSyncStatus } from '@/lib/local/hooks';
-import { addDays, localDate } from '@/lib/program';
+import { addDays, dayInfo, localDate } from '@/lib/program';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -82,7 +82,6 @@ export default function TodayPage() {
   }
 
   if (!sessions || !progress) return <Spinner />;
-  const total = sessions.length;
   const preferred = settings.preferred_days.includes(weekdayIn(tz));
   const current = progress.current;
   const waiting = progress.waiting;
@@ -94,11 +93,11 @@ export default function TodayPage() {
         <section aria-labelledby="up-next">
           <div className="mb-3">
             <div className="text-[11px] font-bold uppercase tracking-widest text-text3">
-              Week {current.week} · {current.phase}
-              {current.is_deload ? ' · Deload' : ''} · {current.seq}/{total}
+              Cycle {dayInfo(current).cycle} · Week {current.week} · {current.phase}
+              {current.is_deload ? ' · Deload' : ''}
             </div>
             <h2 id="up-next" className="font-condensed text-2xl font-black leading-tight">
-              Day {current.seq} · {current.title} {current.status === 'in_progress' ? 'in progress' : 'is up next'}
+              {dayInfo(current).label} {current.status === 'in_progress' ? 'in progress' : 'is up next'}
             </h2>
             {current.status === 'up_next' && (
               <p className="text-xs text-text2 mt-1">
@@ -115,10 +114,11 @@ export default function TodayPage() {
               <Lock size={12} /> Locked
             </div>
             <h2 className="font-condensed text-2xl font-black leading-tight">
-              Day {waiting.seq} · {waiting.title}
+              {dayInfo(waiting).label}
             </h2>
             <p className="text-sm text-text2">
-              Unlocks {unlockLabel(progress.unlocksOn, tz)}. Nice work on Day {waiting.seq - 1}.
+              Unlocks {unlockLabel(progress.unlocksOn, tz)}.
+              {sessions[waiting.seq - 2] ? ` Nice work on ${dayInfo(sessions[waiting.seq - 2]).label}.` : ''}
             </p>
           </div>
           <div className="text-[11px] font-bold uppercase tracking-widest text-text3">Preview</div>

@@ -20,15 +20,17 @@ is complete. Logging works fully offline. Source of truth for scope:
 ## Layout
 
 ```
-app/(app)/today|program|history|settings   client pages reading Dexie (offline shell)
+app/(app)/today|strength|history|settings  client pages (Strength: Lifts from Dexie; Garmin workouts / Recovery from Supabase)
 app/sw.ts                                  service worker (precache + app-shell caches + push)
 app/api/push/subscribe, api/cron/reminders web push
 app/api/garmin/*, api/cron/garmin          Garmin track (lib/garmin)
 app/api/insight, api/coach                 AI track (lib/ai)
 components/workout/                        ExerciseBlock (set grid), SessionLogger, SwapSheet, sound.ts
-components/app/                            AppShell (nav, sync engine), DailyInsight
+components/app/                            AppShell (nav, sync engine, FloatingCoach), DailyInsight
+components/coach/                          FloatingCoach (co-pilot button + sheet, live context), CoachCard (chat)
 components/settings/GarminSection.tsx      Garmin UI over the /api/garmin contract
-lib/program/   templates, generate.ts (pure, deterministic), unlock.ts (state machine), completion.ts, types.ts (DB rows)
+lib/program/   templates, generate.ts (pure, deterministic), unlock.ts (state machine), days.ts (Day 1–4 labels), completion.ts, types.ts (DB rows)
+lib/strength/  lifts.ts (per-exercise e1RM progress, pure)
 lib/exercises/ seed.ts (library source of truth), sql.ts (seed SQL generator)
 lib/local/     db.ts (Dexie), outbox.ts, actions.ts (all writes), sync.ts, merge.ts, hooks.ts
 lib/audio/     cues.ts (Web Audio + Audio Session), rest.ts (timestamp timer), wakeLock.ts
@@ -53,10 +55,15 @@ supabase/migrations/20261110000000_v2_core.sql  schema, RLS, triggers, complete_
 
 ## Locked progression
 
-`locked → up_next → in_progress → complete`, one function:
+`locked → up_next → in_progress → complete` (in_progress → up_next only via
+Reset of an accidental start), one function:
 `lib/program/unlock.ts#advance`, mirrored in SQL (`_refresh_unlocks`,
 `complete_session`, `set_logs` guard trigger).
 
+- Start: only the Start button (`start_session()`); clients can't log sets
+  into an up-next session (guard raises `not_started`). Garmin (trusted) may.
+- Reset: in_progress → up_next, deletes that session's sets (`reset_session()`).
+- Display: sessions show as a repeating Day 1–4 cycle by category (`dayInfo`).
 - Unlock: previous session complete AND (rule `immediate` OR a later local
   calendar day in `user_settings.timezone`). Default `next_calendar_day`.
 - Complete: every prescribed working set (`set_index < sets`) done with reps or

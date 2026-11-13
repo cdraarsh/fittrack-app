@@ -53,6 +53,7 @@ test('an accidental start can be reset from Stop; the coach floats on every page
   await stop.getByRole('button', { name: /Finish later/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Program', exact: true }).click();
+  await page.getByRole('link', { name: 'History', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Open AI coach' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Program', exact: true })).toHaveCount(0);
 });

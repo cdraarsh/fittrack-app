@@ -62,14 +62,7 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await expect(page.getByText(/Unlocks/)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
 
-  // Future sessions can't be logged from Program either.
   await context.setOffline(false);
-  await page.goto('/program');
-  const day3 = page.getByRole('button', { name: /Day 3\b/ });
-  if (await day3.count()) {
-    await day3.first().click();
-    await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
-  }
 
   // Next calendar day: Day 2 is up next.
   await page.clock.setFixedTime(DAY2);

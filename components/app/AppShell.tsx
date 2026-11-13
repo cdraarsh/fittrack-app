@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { CalendarRange, CloudOff, History, RefreshCw, Settings2, Zap } from 'lucide-react';
+import { Dumbbell, CloudOff, History, RefreshCw, Settings2, Zap } from 'lucide-react';
 import { useLocalUserId, useSettings, useSyncEngine, useSyncStatus, useOutboxCounts } from '@/lib/local/hooks';
 import { useCueSetup } from '@/lib/audio/hooks';
 import RestTimer from '../shared/RestTimer';
@@ -12,7 +12,7 @@ import FloatingCoach from '../coach/FloatingCoach';
 
 const NAV = [
   { href: '/today', label: 'Today', icon: Zap },
-  { href: '/program', label: 'Program', icon: CalendarRange },
+  { href: '/strength', label: 'Strength', icon: Dumbbell },
   { href: '/history', label: 'History', icon: History },
   { href: '/settings', label: 'Settings', icon: Settings2 },
 ];
