@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /** Local reminder window. Vercel Hobby runs a cron once a day: vercel.json
  *  schedules 01:30 UTC (07:00 in India); other zones get it only if that lands
  *  in the morning there. */
-export const REMINDER_HOURS = { from: 6, to: 11 } as const;
+const REMINDER_HOURS = { from: 6, to: 11 } as const;
 
 function localParts(timeZone: string, now: Date): { weekday: number; hour: number } {
   const f = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
