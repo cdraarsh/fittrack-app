@@ -235,6 +235,7 @@ function lastDoneWeight(input: StatsInput, idx: Indexed, exerciseId: string, exc
     if (!s.done || !isNum(s.weight_kg) || s.weight_kg <= 0) continue;
     const se = idx.seById.get(s.session_exercise_id);
     if (!se || se.exercise_id !== exerciseId || se.session_id === excludeSessionId) continue;
+    if (idx.sessionById.get(se.session_id)?.is_deload) continue; // deload loads aren't working weights
     const at = s.updated_at ?? '';
     if (!best || at > best.at) best = { kg: s.weight_kg, at };
   }

@@ -68,6 +68,7 @@ export function useSyncEngine(): void {
     setStatus({ state: 'syncing' });
     try {
       const r = await syncNow(getDb(), client, userId);
+      if (r.pulled && typeof window !== 'undefined') window.dispatchEvent(new Event('fittrack:synced'));
       setStatus({
         state: r.blocked ? 'error' : 'idle',
         lastError: r.lastError,

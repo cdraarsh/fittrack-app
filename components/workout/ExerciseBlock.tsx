@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Lightbulb, ArrowLeftRight, Check, Circle, Trophy, Watch } from 'lucide-react';
-import { hitTopOfRange, prefillWeight } from '@/lib/program';
+import { parseSetValue, topOfRangeHint, prefillWeight } from '@/lib/program';
 import type { SessionBundleItem } from '@/lib/local/hooks';
 import type { SetPatch } from '@/lib/local/actions';
 import SwapSheet from './SwapSheet';
@@ -22,11 +22,8 @@ interface Props {
   onTicked: (restSeconds: number, exerciseDone: boolean) => void;
 }
 
-const parseNum = (v: string, int: boolean): number | null => {
-  if (v.trim() === '') return null;
-  const n = int ? parseInt(v, 10) : parseFloat(v);
-  return Number.isFinite(n) && n >= 0 ? n : null;
-};
+// int = reps/seconds, else weight; clamped to what the database stores.
+const parseNum = (v: string, int: boolean): number | null => parseSetValue(v, int ? 'reps' : 'weight_kg');
 
 /**
  * v1's set grid, rewired to the local store. Saves on tick and on blur, never
@@ -44,7 +41,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   const swapped = se.exercise_id !== se.prescribed_exercise_id;
   const byIndex = new Map(logs.map((l) => [l.set_index, l]));
   const prefill = prefillWeight(lastWeight, isDeload, se.target_kg);
-  const topOfRange = hitTopOfRange(se, logs, timed);
+  const topOfRange = topOfRangeHint(se, logs, timed);
 
   // Inputs are uncontrolled and keyed by index, so a save never remounts the
   // row (that wiped the other field and closed the iPhone keyboard). Push saved
@@ -205,7 +202,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
 
       {topOfRange && mode === 'active' && (
         <div className="flex items-center gap-2 mt-2.5 bg-accent/5 border border-accent/18 rounded-lg px-3 py-2 text-xs text-accent font-semibold">
-          <Trophy size={13} className="flex-shrink-0" /> All sets hit top of range — add 2.5 kg next session!
+          <Trophy size={13} className="flex-shrink-0" /> {topOfRange}
         </div>
       )}
 

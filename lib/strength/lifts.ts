@@ -43,7 +43,9 @@ export function liftProgress(input: LiftRowsInput, today = new Date().toISOStrin
     const ex = se && exById.get(se.exercise_id);
     const s = se && sessionById.get(se.session_id);
     if (!se || !ex || !s || ex.is_timed) continue;
-    const e1rm = epley1RM(l.weight_kg, l.reps);
+    // Epley is unreliable past 12 reps (and returns null); cap there so high-rep
+    // work (curls 12–15, calf raises 15–20) still shows up as a conservative estimate.
+    const e1rm = epley1RM(l.weight_kg, Math.min(l.reps, 12));
     if (e1rm === null) continue;
     const date = (s.completed_at ?? s.started_at ?? l.logged_at ?? l.updated_at).slice(0, 10);
     const point: LiftPoint = { date, e1rm: round1(e1rm), topKg: l.weight_kg, topReps: l.reps };

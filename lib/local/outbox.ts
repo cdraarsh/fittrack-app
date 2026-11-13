@@ -16,8 +16,14 @@ function uuid(): string {
 export async function enqueue(db: FitDB, payload: OutboxPayload, key: string | null = null): Promise<void> {
   await db.transaction('rw', db.outbox, async () => {
     if (key) {
-      const existing = await db.outbox.where('key').equals(key).filter((o) => o.status === 'pending').first();
-      if (existing) {
+      // Coalesce in place unless a Start/Reset/Complete (rpc) was queued after the
+      // existing op: moving this newer change ahead of it could reorder cause and
+      // effect (e.g. a settings change made after Complete reaching the server
+      // before complete_session). Then append instead.
+      const existing = await db.outbox.where('key').equals(key).filter((o) => o.status === 'pending').last();
+      const barrierAfter =
+        existing && (await db.outbox.where('seq').above(existing.seq!).filter((o) => o.payload.kind === 'rpc').count()) > 0;
+      if (existing && !barrierAfter) {
         await db.outbox.update(existing.seq!, { payload, rev: existing.rev + 1 });
         return;
       }

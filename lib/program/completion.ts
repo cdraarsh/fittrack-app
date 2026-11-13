@@ -1,7 +1,7 @@
 import type { SessionExercise, SetLog } from './types';
 
 type SE = Pick<SessionExercise, 'id' | 'sets'>;
-type Log = Pick<SetLog, 'session_exercise_id' | 'set_index' | 'done' | 'reps' | 'seconds'>;
+type Log = Pick<SetLog, 'session_exercise_id' | 'set_index' | 'done' | 'reps' | 'seconds'> & { weight_kg?: number | null };
 
 /** A working set counts when it is ticked done with reps or seconds recorded. */
 export function isWorkingSetDone(log: Log | undefined): boolean {
@@ -29,12 +29,8 @@ export function allWorkingSetsDone(exercises: SE[], logs: Log[]): boolean {
   return missingWorkingSets(exercises, logs) === 0;
 }
 
-/** +2.5 kg hint: every prescribed set done at or above the top of the range. */
-export function hitTopOfRange(
-  se: Pick<SessionExercise, 'id' | 'sets' | 'rep_hi'>,
-  logs: Log[],
-  isTimed: boolean,
-): boolean {
+/** Every prescribed set done at or above the top of the range (reps or seconds). */
+function allAtTop(se: Pick<SessionExercise, 'id' | 'sets' | 'rep_hi'>, logs: Log[], isTimed: boolean): boolean {
   for (let i = 0; i < se.sets; i++) {
     const l = logs.find((x) => x.session_exercise_id === se.id && x.set_index === i);
     if (!isWorkingSetDone(l)) return false;
@@ -42,4 +38,26 @@ export function hitTopOfRange(
     if (v < se.rep_hi) return false;
   }
   return se.sets > 0;
+}
+
+/** +2.5 kg hint: only for loaded rep work (never timed holds or bodyweight). */
+export function hitTopOfRange(
+  se: Pick<SessionExercise, 'id' | 'sets' | 'rep_hi'>,
+  logs: Log[],
+  isTimed: boolean,
+): boolean {
+  if (isTimed || !allAtTop(se, logs, false)) return false;
+  return logs.some((l) => l.session_exercise_id === se.id && l.done && (l.weight_kg ?? 0) > 0);
+}
+
+/** What to progress next time, matched to the kind of exercise; null when not earned yet. */
+export function topOfRangeHint(
+  se: Pick<SessionExercise, 'id' | 'sets' | 'rep_hi'>,
+  logs: Log[],
+  isTimed: boolean,
+): string | null {
+  if (!allAtTop(se, logs, isTimed)) return null;
+  if (isTimed) return `Every hold hit ${se.rep_hi} s — add 5–10 s next session.`;
+  if (hitTopOfRange(se, logs, false)) return 'All sets hit top of range — add 2.5 kg next session!';
+  return 'All sets hit the top — add reps or load next session.';
 }

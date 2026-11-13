@@ -13,6 +13,8 @@ export const MAX_COACH_MESSAGE_CHARS = 1000;
 
 export function resolveDailyCap(settings: UserSettingsRow | null | undefined): number {
   const v = settings?.coach_daily_cap;
+  // Settings: "Empty = no cap" → the hard ceiling. No settings row → default.
+  if (settings && v === null) return MAX_COACH_DAILY_CAP;
   if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return DEFAULT_COACH_DAILY_CAP;
   return Math.min(Math.floor(v), MAX_COACH_DAILY_CAP);
 }

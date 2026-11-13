@@ -251,7 +251,7 @@ export async function updateSessionFields(db: FitDB, sessionId: string, patch: S
   const updated_at = iso(now);
   // Coalesce per session; the merged patch carries every field changed so far.
   const key = `session:${sessionId}`;
-  const prev = await db.outbox.where('key').equals(key).filter((o) => o.status === 'pending').first();
+  const prev = await db.outbox.where('key').equals(key).filter((o) => o.status === 'pending').last();
   const prevPatch = prev?.payload.kind === 'update' ? prev.payload.patch : {};
   await enqueue(db, { kind: 'update', table: 'program_sessions', id: sessionId, patch: { ...prevPatch, ...patch, updated_at } }, key);
   await db.program_sessions.put({ ...s, ...patch, updated_at });
@@ -348,12 +348,19 @@ export async function saveBodyWeight(db: FitDB, userId: string, date: string, kg
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-/** Most recent done weight for an exercise, outside the given session (for prefill). */
+/**
+ * Most recent done weight for an exercise, outside the given session (for
+ * prefill). Deload sessions are skipped: their ~60% loads must not become the
+ * next week's working weight (and a deload prefills 60% of the real weight).
+ */
 export async function lastWeightFor(db: FitDB, exerciseId: string, excludeSessionId?: string): Promise<number | null> {
   const ses: SessionExercise[] = await db.session_exercises.where('exercise_id').equals(exerciseId).toArray();
+  const deload = new Set(
+    (await db.program_sessions.bulkGet([...new Set(ses.map((s) => s.session_id))])).filter((s) => s?.is_deload).map((s) => s!.id),
+  );
   let best: SetLog | null = null;
   for (const se of ses) {
-    if (se.session_id === excludeSessionId) continue;
+    if (se.session_id === excludeSessionId || deload.has(se.session_id)) continue;
     const logs = await db.set_logs.where('session_exercise_id').equals(se.id).toArray();
     for (const l of logs) {
       if (!l.done || l.weight_kg === null) continue;

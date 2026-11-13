@@ -28,6 +28,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // Draw edge to edge on iPhone so env(safe-area-inset-*) is real; the header
+  // and nav pad themselves clear of the status bar and home indicator.
+  viewportFit: 'cover',
   themeColor: '#080b10',
 };
 
