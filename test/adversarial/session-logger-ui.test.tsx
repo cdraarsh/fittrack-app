@@ -28,7 +28,7 @@ describe('adversarial: session logger UI', () => {
   it('holds: an up_next session shows Start and no set inputs, notes, swap or enabled cardio', async () => {
     render(<SessionLogger sessionId={sid} userId={U} />);
     await screen.findByRole('button', { name: /Start Day 1/ });
-    expect(screen.queryByLabelText(/Set 1 weight/)).toBeNull();
+    expect(screen.queryByLabelText(/ set 1 weight$/i)).toBeNull();
     expect(screen.queryByLabelText('Session notes')).toBeNull();
     expect(screen.queryByLabelText('Swap exercise')).toBeNull();
     const cardio = screen.queryByLabelText('Cardio done') as HTMLInputElement | null;

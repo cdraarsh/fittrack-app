@@ -33,7 +33,7 @@ export default function Toast() {
       aria-live="polite"
       className={`fixed left-1/2 z-[45] -translate-x-1/2 max-w-[90%] text-center bg-bg2 border border-border rounded-xl px-4 py-2.5 text-[13px] font-semibold text-text1 shadow-lg transition-all duration-200 ${
         resting ? 'bottom-[calc(132px+env(safe-area-inset-bottom))]' : 'bottom-[calc(68px+env(safe-area-inset-bottom))]'
-      } ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}
+      } pointer-events-none ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
     >
       {message}
     </div>

@@ -101,7 +101,7 @@ export function parseCoachContext(raw: unknown): CoachContext | null {
         setsTotal: cleanInt(s.setsTotal, 0, 500),
         setsDone: cleanInt(s.setsDone, 0, cleanInt(s.setsTotal, 0, 500) ?? 500),
         nextExercise: cleanText(s.nextExercise),
-        ...(s.paused === true ? { paused: true } : {}),
+        ...(s.paused === true && status === 'in_progress' ? { paused: true } : {}),
       };
     }
   }

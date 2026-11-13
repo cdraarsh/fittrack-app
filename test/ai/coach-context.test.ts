@@ -37,3 +37,11 @@ describe('coach live context', () => {
     expect(() => buildCoachSystem(pack)).not.toThrow();
   });
 });
+
+describe('coach context: paused', () => {
+  it('only an in-progress session can be paused', () => {
+    expect(parseCoachContext({ page: 'today', session: { seq: 1, title: 'A', status: 'in_progress', paused: true } })!.session!.paused).toBe(true);
+    expect(parseCoachContext({ page: 'today', session: { seq: 1, title: 'A', status: 'up_next', paused: true } })!.session!.paused).toBeUndefined();
+    expect(formatCoachContext(parseCoachContext({ page: 'today', session: { seq: 1, title: 'A', status: 'complete', paused: true } }))).not.toMatch(/paused/);
+  });
+});

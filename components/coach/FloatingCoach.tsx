@@ -11,7 +11,7 @@ import CoachCard from './CoachCard';
 import { dayInfo } from '@/lib/program';
 import type { CoachContext, CoachPage } from '@/lib/ai/coach';
 import { useActiveProgram, useLocalUserId, usePause, useProgramSessions, useProgress, useSessionBundle, useSettings } from '@/lib/local/hooks';
-import { effectivePause, isPaused } from '@/lib/local/pause';
+import { activeMs, effectivePause, isPaused } from '@/lib/local/pause';
 import { useOverlays } from '@/lib/ui/overlays';
 
 const PAGES: CoachPage[] = ['today', 'strength', 'history', 'settings'];
@@ -50,7 +50,8 @@ export function useCoachContext(): CoachContext {
         seq: current.seq,
         title: dayInfo(current).label,
         status: current.status,
-        elapsedMin: current.started_at ? Math.max(0, Math.round((minute - new Date(current.started_at).getTime()) / 60_000)) : undefined,
+        // Active training time (excludes a Finish-later pause), not wall clock.
+        elapsedMin: current.started_at ? Math.round(activeMs(effectivePause(pauseStored, current.started_at), minute) / 60_000) : undefined,
         setsDone,
         setsTotal,
         nextExercise,
@@ -85,7 +86,9 @@ export default function FloatingCoach() {
   // icon), while the rest dock owns the bottom, and while the keyboard is up.
   // On Today the session bar carries the coach while a session is open; other
   // screens keep the floating button so the coach is always one tap away.
-  const hideFab = (inSession && context.page === 'today') || overlays.resting || overlays.inputFocused;
+  // While resting the dock owns the bottom: the button moves up above it rather
+  // than disappearing, so the coach stays reachable on every screen.
+  const hideFab = (inSession && context.page === 'today') || overlays.inputFocused;
 
   useEffect(() => {
     const onOpen = () => openSheet();
@@ -130,7 +133,7 @@ export default function FloatingCoach() {
           ref={fabRef}
           onClick={openSheet}
           aria-label="Open AI coach"
-          className="fixed z-40 right-[max(1rem,calc(50%-15rem+1rem))] bottom-[calc(72px+env(safe-area-inset-bottom))] w-14 h-14 rounded-full bg-gradient-to-br from-energy to-accent text-black shadow-lg shadow-accent/20 flex items-center justify-center active:scale-95 transition-transform"
+          className={`fixed z-40 right-[max(1rem,calc(50%-15rem+1rem))] ${overlays.resting ? 'bottom-[calc(136px+env(safe-area-inset-bottom))]' : 'bottom-[calc(72px+env(safe-area-inset-bottom))]'} w-14 h-14 rounded-full bg-gradient-to-br from-energy to-accent text-black shadow-lg shadow-accent/20 flex items-center justify-center active:scale-95 transition-[bottom,transform]`}
         >
           <Sparkles size={22} />
           {inSession && <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-bg border-2 border-accent" aria-hidden />}
