@@ -90,7 +90,7 @@ self.addEventListener('push', (event) => {
     title: str(payload.title, 80),
     body: str(payload.body, 240),
     tag: str(payload.tag, 64),
-    url: typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/today',
+    url: typeof payload.url === 'string' && /^\/(?!\/)/.test(payload.url) ? payload.url : '/today',
   };
   event.waitUntil(
     self.registration.showNotification(payload.title ?? 'FitTrack', {
@@ -109,11 +109,15 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       // Same-origin paths only; bring an open window to the notification's page.
-      const target = url.startsWith('/') ? url : '/today';
+      const target = /^\/(?!\/)/.test(url) ? url : '/today';
       for (const c of list) {
         const w = c as WindowClient;
         // Focus first (inside the click's user activation), then move to the page.
-        if ('focus' in w) return w.focus().then((f) => (f.url.endsWith(target) ? f : f.navigate(target).catch(() => f)));
+        if ('focus' in w)
+          return w
+            .focus()
+            .then((f) => (f.url.endsWith(target) ? f : f.navigate(target).catch(() => f)))
+            .catch(() => self.clients.openWindow(target));
       }
       return self.clients.openWindow(target);
     }),

@@ -46,8 +46,7 @@ export function liftProgress(input: LiftRowsInput, today = new Date().toISOStrin
     // reps, so adding reps at the same load shows as progress. Beyond 20 it's
     // treated as 20.
     const reps = Math.min(l.reps, 20);
-    const e1rm = l.weight_kg * (1 + reps / 30);
-    if (e1rm === null) continue;
+    const e1rm = reps === 1 ? l.weight_kg : l.weight_kg * (1 + reps / 30);
     const date = (s.completed_at ?? s.started_at ?? l.logged_at ?? l.updated_at).slice(0, 10);
     const point: LiftPoint = { date, e1rm: round1(e1rm), topKg: l.weight_kg, topReps: l.reps };
     const bySession = per.get(ex.id) ?? new Map<string, LiftPoint>();

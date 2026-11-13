@@ -67,6 +67,14 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   async function blurSave(i: number, field: 'weight_kg' | 'reps' | 'seconds', raw: string) {
     const log = byIndex.get(i);
     const val = parseNum(raw, field);
+    // Unreadable input (not empty): restore what was there instead of clearing the set.
+    if (val === null && raw.trim() !== '') {
+      const el = field === 'weight_kg' ? weightRefs.current[i] : valueRefs.current[i];
+      const prev = log ? log[field] : field === 'weight_kg' ? prefill : null;
+      if (el) el.value = prev === null || prev === undefined ? '' : String(prev);
+      toast(field === 'weight_kg' ? 'Use a number like 42.5' : 'Use a whole number');
+      return;
+    }
     const current = log ? log[field] : field === 'weight_kg' ? prefill : null;
     if (val === current) return;
     if (mode === 'complete' && (!log?.done || val === null || (field !== 'weight_kg' && val === 0))) return;
@@ -162,7 +170,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
                 </span>
                 <input
                   ref={(el) => { weightRefs.current[i] = el; }}
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   aria-label={`${exName} set ${i + 1} weight`}
                   defaultValue={w ?? undefined}
@@ -175,7 +183,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
                 />
                 <input
                   ref={(el) => { valueRefs.current[i] = el; }}
-                  type="number"
+                  type="text"
                   inputMode="numeric"
                   aria-label={`${exName} set ${i + 1} ${timed ? 'seconds' : 'reps'}`}
                   defaultValue={v ?? undefined}
