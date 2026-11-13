@@ -5,3 +5,4 @@ export * from './generate';
 export * from './completion';
 export * from './ids';
 export * from './days';
+export * from './routines';

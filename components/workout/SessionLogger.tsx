@@ -5,8 +5,20 @@ import { CheckCircle2, Bike, Play, Square, RotateCcw, Pause } from 'lucide-react
 import { getDb } from '@/lib/local/db';
 import { completeSession, resetSession, saveSet, startSession, updateSessionFields, LocalRuleError, type SetPatch } from '@/lib/local/actions';
 import { useLastWeights, useSessionBundle, type SessionBundle } from '@/lib/local/hooks';
-import { dayInfo, missingWorkingSets } from '@/lib/program';
+import {
+  BAR_EQUIPMENT,
+  BAR_KG,
+  RAMP_SET_S,
+  dayInfo,
+  defaultRoutineOpen,
+  missingWorkingSets,
+  prefillWeight,
+  rampUpSets,
+  routineItems,
+  routineMinutes,
+} from '@/lib/program';
 import ExerciseBlock, { type LoggerMode } from './ExerciseBlock';
+import RoutineCard from './RoutineCard';
 import { startRestTimer, stopRestTimer } from '../shared/RestTimer';
 import { toast } from '../shared/Toast';
 import { sound, useWakeLock } from './sound';
@@ -56,6 +68,23 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
   const loggedSets = items.reduce((n, i) => n + i.logs.filter((l) => l.done || l.weight_kg !== null || l.reps !== null || l.seconds !== null).length, 0);
 
   useWakeLock(session.status === 'in_progress');
+
+  // Warm-up / cool-down: guidance only (localStorage ticks, never logged, never
+  // part of completion). Ramp-up follows the first lift's prefilled weight.
+  const routineReadOnly = preview || session.status === 'locked';
+  const anyWorkingDone = items.some((i) => i.logs.some((l) => l.done && l.set_index < i.se.sets));
+  const openInput = { readOnly: routineReadOnly, status: session.status, anyWorkingDone, allWorkingDone: missing === 0 };
+  const warmup = routineItems(session.template_key, 'warmup');
+  const cooldown = routineItems(session.template_key, 'cooldown');
+  const first = items[0];
+  const ramp = first
+    ? {
+        exerciseName: first.exercise?.name ?? first.se.exercise_id,
+        sets: rampUpSets(prefillWeight(lastWeights[first.se.exercise_id] ?? null, session.is_deload, first.se.target_kg), {
+          barKg: first.exercise && BAR_EQUIPMENT.has(first.exercise.equipment) ? BAR_KG : 0,
+        }),
+      }
+    : null;
 
   const save = (sessionExerciseId: string) => (setIndex: number, patch: SetPatch) =>
     saveSet(getDb(), userId, { sessionExerciseId, setIndex, patch }).catch((e) => {
@@ -135,6 +164,18 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
         />
       )}
 
+      {warmup.length > 0 && (
+        <RoutineCard
+          kind="warmup"
+          sessionId={session.id}
+          items={warmup}
+          ramp={ramp}
+          minutes={routineMinutes(warmup, (ramp?.sets.length ?? 0) * RAMP_SET_S)}
+          defaultOpen={defaultRoutineOpen('warmup', openInput)}
+          readOnly={routineReadOnly}
+        />
+      )}
+
       {items.map((item) => (
         <ExerciseBlock
           key={item.se.id}
@@ -167,6 +208,17 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
             aria-label="Cardio done"
           />
         </label>
+      )}
+
+      {cooldown.length > 0 && (
+        <RoutineCard
+          kind="cooldown"
+          sessionId={session.id}
+          items={cooldown}
+          minutes={routineMinutes(cooldown)}
+          defaultOpen={defaultRoutineOpen('cooldown', openInput)}
+          readOnly={routineReadOnly}
+        />
       )}
 
       {mode !== 'preview' && (
