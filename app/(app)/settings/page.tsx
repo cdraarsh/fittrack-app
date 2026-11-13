@@ -383,13 +383,16 @@ function NotificationsCard() {
             Turn off
           </button>
         ) : (
-          <button
-            disabled={busy || state === 'loading'}
-            onClick={() => void enable()}
-            className="h-11 px-3 rounded-lg bg-accent/10 border border-accent/30 text-accent text-sm font-bold disabled:opacity-40"
-          >
-            Turn on
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              disabled={busy || state === 'loading'}
+              onClick={() => void (state === 'no-worker' ? refresh() : enable())}
+              className="h-11 px-3 rounded-lg bg-accent/10 border border-accent/30 text-accent text-sm font-bold disabled:opacity-40"
+            >
+              {state === 'no-worker' ? 'Try again' : 'Turn on'}
+            </button>
+            {state === 'no-worker' && <span className="text-xs text-text3 text-right">Open the installed app, then try again</span>}
+          </div>
         )}
       </Row>
     </Card>

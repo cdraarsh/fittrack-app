@@ -11,7 +11,7 @@ export function parseSetValue(raw: string, field: 'weight_kg' | 'reps' | 'second
   // "4x" are rejected rather than silently read as 1 or 4.
   const v = raw.trim().replace(',', '.');
   if (v === '') return null;
-  const ok = field === 'weight_kg' ? /^\+?\d+(\.\d+)?$|^\+?\.\d+$/.test(v) : /^\+?\d+$/.test(v);
+  const ok = field === 'weight_kg' ? /^\+?\d+(\.\d*)?$|^\+?\.\d+$/.test(v) : /^\+?\d+$/.test(v);
   if (!ok) return null;
   const n = Number(v);
   if (!Number.isFinite(n) || n < 0) return null;

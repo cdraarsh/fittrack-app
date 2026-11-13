@@ -73,6 +73,13 @@ export async function GET(req: NextRequest) {
       const session = waiting.get(sub.user_id);
       if (!s || !session || !sub.subscription?.endpoint) return;
       const { weekday, hour } = localParts(s.timezone || 'UTC', now);
+      // Already trained today (possible with the 'immediate' rule): no nudge.
+      const tz = s.timezone || 'UTC';
+      const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+      const trainedToday = (sessionRows ?? []).some(
+        (r) => r.user_id === sub.user_id && typeof r.completed_at === 'string' && day(new Date(r.completed_at)) === day(now),
+      );
+      if (trainedToday) return;
       if (!(s.preferred_days ?? []).includes(weekday)) return;
       if (hour < REMINDER_HOURS.from || hour >= REMINDER_HOURS.to) return;
       const label = dayInfo(session).label;

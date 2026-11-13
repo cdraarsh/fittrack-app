@@ -33,19 +33,26 @@ export default function DailyInsight({ today }: { today: string }) {
   const [text, setText] = useState<string | null>(null);
   const final = useRef(false);
   const inFlight = useRef(false);
+  const inFlightSince = useRef(0);
   const lastFetch = useRef(0);
+  const todayRef = useRef(today);
+  todayRef.current = today;
 
   const load = useCallback(
     (fromSync: boolean) => {
-      if (final.current || inFlight.current || typeof navigator === 'undefined' || !navigator.onLine) return;
+      // A request older than 30 s (aborted, or the PWA was suspended mid-request) no longer blocks.
+      const busy = inFlight.current && Date.now() - inFlightSince.current < 30_000;
+      if (final.current || busy || typeof navigator === 'undefined' || !navigator.onLine) return;
       if (fromSync && Date.now() - lastFetch.current < REFETCH_MIN_MS) return;
       inFlight.current = true;
+      inFlightSince.current = Date.now();
       lastFetch.current = Date.now();
       const forDay = today;
-      fetch('/api/insight', { cache: 'no-store' })
+      fetch('/api/insight', { cache: 'no-store', signal: AbortSignal.timeout(30_000) })
         .then((r) => (r.ok ? r.json() : null))
         .then((d: InsightResponse | null) => {
-          if (!d?.text || forDay !== today) return;
+          // A late answer for a day that has since ended is dropped.
+          if (!d?.text || forDay !== todayRef.current) return;
           setText(d.text);
           if (d.degraded) return;
           const isFinal = d.source === 'model' || d.cached === true;
@@ -67,6 +74,7 @@ export default function DailyInsight({ today }: { today: string }) {
   useEffect(() => {
     final.current = false;
     lastFetch.current = 0;
+    inFlight.current = false; // a request still running for yesterday must not block today's
     let cached: Stored | null = null;
     try {
       cached = JSON.parse(localStorage.getItem(KEY) ?? 'null');
