@@ -2,7 +2,7 @@
 /// <reference types="@serwist/next/typings" />
 import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from 'serwist';
-import { NetworkFirst, Serwist } from 'serwist';
+import { NetworkFirst, NetworkOnly, Serwist } from 'serwist';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -31,12 +31,19 @@ const appShell: RuntimeCaching[] = [
   },
 ];
 
+// Exercise videos: never precache or runtime-cache YouTube (thumbnails, embeds).
+// They load only when the user taps, and the sheet says they need a connection.
+const YOUTUBE_HOST = /(^|\.)(youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)$/;
+const thirdPartyVideo: RuntimeCaching[] = [
+  { matcher: ({ url }) => YOUTUBE_HOST.test(url.hostname), handler: new NetworkOnly() },
+];
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [...appShell, ...defaultCache],
+  runtimeCaching: [...thirdPartyVideo, ...appShell, ...defaultCache],
   fallbacks: {
     entries: [{ url: '/~offline', matcher: ({ request }) => request.destination === 'document' }],
   },
