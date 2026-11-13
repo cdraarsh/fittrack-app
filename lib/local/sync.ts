@@ -117,8 +117,38 @@ export interface SyncResult extends FlushResult {
   pulled: boolean;
 }
 
-/** Flush the outbox, then (if nothing is left pending) pull and re-run local unlocks. */
-export async function syncNow(db: FitDB, client: SupabaseClient, userId: string): Promise<SyncResult> {
+const running = new WeakMap<FitDB, { promise: Promise<SyncResult>; again: boolean }>();
+
+/**
+ * Flush the outbox, then (if nothing is left pending) pull and re-run local
+ * unlocks. One sync at a time per database: overlapping syncs let one flush
+ * empty the outbox while another's pull holds older server data, which then
+ * overwrote fresh local state. A call during a run schedules one more run.
+ */
+export function syncNow(db: FitDB, client: SupabaseClient, userId: string): Promise<SyncResult> {
+  const cur = running.get(db);
+  if (cur) {
+    cur.again = true;
+    return cur.promise;
+  }
+  const entry = { promise: undefined as unknown as Promise<SyncResult>, again: false };
+  entry.promise = (async () => {
+    try {
+      let r = await syncOnce(db, client, userId);
+      while (entry.again) {
+        entry.again = false;
+        r = await syncOnce(db, client, userId);
+      }
+      return r;
+    } finally {
+      running.delete(db);
+    }
+  })();
+  running.set(db, entry);
+  return entry.promise;
+}
+
+async function syncOnce(db: FitDB, client: SupabaseClient, userId: string): Promise<SyncResult> {
   const f = await flush(db, client);
   let pulled = false;
   if (!f.blocked && (await pendingCount(db)) === 0) {

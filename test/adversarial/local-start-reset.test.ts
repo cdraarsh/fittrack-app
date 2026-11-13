@@ -165,6 +165,41 @@ describe('adversarial: local start/reset', () => {
     expect(await logsOf(s.id)).toHaveLength(0); // up_next must not carry logged sets
   });
 
+  it('overlapping syncs with a Start in between end with the session in progress', async () => {
+    await flush(db, fakeSupabase().client);
+    const s = await s1();
+    const tables = await serverTables(); // server snapshot: up_next
+    // Like the real server: start_session moves the session to in_progress.
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const pullStarted = new Promise<void>((r) => (entered = r));
+    let gated = true;
+    const { client, calls } = fakeSupabase({
+      tables,
+      respond: async (c: Call) => {
+        if (c.kind === 'rpc' && c.fn === 'refresh_unlocks' && gated) {
+          gated = false;
+          entered();
+          await gate;
+        }
+        if (c.kind === 'rpc' && c.fn === 'start_session') {
+          for (const row of tables.program_sessions as { id: string; status: string }[]) if (row.id === s.id) row.status = 'in_progress';
+        }
+        return { error: null, status: 200 };
+      },
+    });
+    const g = { client, calls, release: () => release(), pullStarted };
+    const first = syncNow(db, g.client, U); // pull fetches the old snapshot, then blocks
+    await g.pullStarted;
+    await startSession(db, U, s.id, T0); // Start queues start_session...
+    const second = syncNow(db, g.client, U); // ...and another trigger (outbox / online) syncs again
+    g.release();
+    await Promise.all([first, second]);
+    expect((await s1()).status).toBe('in_progress');
+    expect(g.calls.some((c) => c.kind === 'rpc' && c.fn === 'start_session')).toBe(true);
+  });
+
   it('Start tapped during an in-flight pull is reverted by the pull; the next set save is refused with not_started', async () => {
     await flush(db, fakeSupabase().client);
     const s = await s1();

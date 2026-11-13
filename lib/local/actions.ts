@@ -222,9 +222,9 @@ async function saveSetNow(
     updated_at: iso(now),
   };
 
+  await enqueue(db, { kind: 'upsert', table: 'set_logs', rows: [{ ...row }], onConflict: 'id' }, `set_logs:${row.id}`);
   await db.set_logs.put(row);
   if (r.changed.length) await applyProgression(db, session.program_id, r);
-  await enqueue(db, { kind: 'upsert', table: 'set_logs', rows: [{ ...row }], onConflict: 'id' }, `set_logs:${row.id}`);
   return row;
 }
 
@@ -237,8 +237,8 @@ export async function swapExercise(db: FitDB, sessionExerciseId: string, exercis
   const [target, prescribed] = await Promise.all([db.exercises.get(exerciseId), db.exercises.get(se.prescribed_exercise_id)]);
   if (!target || !prescribed || target.swap_group !== prescribed.swap_group) throw new LocalRuleError('swap_not_allowed');
   const updated_at = iso(now);
-  await db.session_exercises.put({ ...se, exercise_id: exerciseId, updated_at });
   await enqueue(db, { kind: 'update', table: 'session_exercises', id: se.id, patch: { exercise_id: exerciseId, updated_at } }, `swap:${se.id}`);
+  await db.session_exercises.put({ ...se, exercise_id: exerciseId, updated_at });
 }
 
 export type SessionPatch = Partial<Pick<ProgramSession, 'notes' | 'cardio_done' | 'cardio_duration_s' | 'cardio_avg_hr'>>;
@@ -248,12 +248,12 @@ export async function updateSessionFields(db: FitDB, sessionId: string, patch: S
   if (!s) throw new LocalRuleError('not_found');
   if (s.status === 'locked') throw new LocalRuleError('locked');
   const updated_at = iso(now);
-  await db.program_sessions.put({ ...s, ...patch, updated_at });
   // Coalesce per session; the merged patch carries every field changed so far.
   const key = `session:${sessionId}`;
   const prev = await db.outbox.where('key').equals(key).filter((o) => o.status === 'pending').first();
   const prevPatch = prev?.payload.kind === 'update' ? prev.payload.patch : {};
   await enqueue(db, { kind: 'update', table: 'program_sessions', id: sessionId, patch: { ...prevPatch, ...patch, updated_at } }, key);
+  await db.program_sessions.put({ ...s, ...patch, updated_at });
 }
 
 /**
@@ -279,10 +279,10 @@ async function completeSessionNow(db: FitDB, userId: string, sessionId: string, 
     await progressionContext(db, userId, now),
   );
   if (!r.ok) throw new LocalRuleError(r.error === 'incomplete' ? 'incomplete' : r.error === 'locked' ? 'locked' : 'not_found');
-  await applyProgression(db, session.program_id, r);
   if (!wasComplete) {
     await enqueue(db, { kind: 'rpc', fn: 'complete_session', args: { session_id: sessionId, client_completed_at: iso(now) } });
   }
+  await applyProgression(db, session.program_id, r);
   return r;
 }
 
@@ -298,8 +298,8 @@ async function startSessionNow(db: FitDB, userId: string, sessionId: string, now
   const r = advance(sessions, { type: 'start', sessionId }, await progressionContext(db, userId, now));
   if (!r.ok) throw new LocalRuleError(r.error === 'locked' ? 'locked' : 'not_found');
   if (session.status === 'up_next') {
-    await applyProgression(db, session.program_id, r);
     await enqueue(db, { kind: 'rpc', fn: 'start_session', args: { session_id: sessionId, client_started_at: iso(now) } });
+    await applyProgression(db, session.program_id, r);
   }
   return r;
 }
@@ -321,6 +321,7 @@ async function resetSessionNow(db: FitDB, userId: string, sessionId: string, now
   if (!r.ok) throw new LocalRuleError(r.error === 'already_complete' ? 'session_complete' : r.error === 'locked' ? 'locked' : 'not_found');
   if (session.status !== 'in_progress') return r;
 
+  await enqueue(db, { kind: 'rpc', fn: 'reset_session', args: { session_id: sessionId } });
   await db.transaction('rw', [db.set_logs, db.outbox, db.program_sessions, db.programs], async () => {
     const logs = await db.set_logs.where('session_id').equals(sessionId).toArray();
     const keys = new Set(logs.map((l) => `set_logs:${l.id}`));
@@ -328,7 +329,6 @@ async function resetSessionNow(db: FitDB, userId: string, sessionId: string, now
     await db.set_logs.bulkDelete(logs.map((l) => l.id));
     await applyProgression(db, session.program_id, r);
   });
-  await enqueue(db, { kind: 'rpc', fn: 'reset_session', args: { session_id: sessionId } });
   return r;
 }
 
