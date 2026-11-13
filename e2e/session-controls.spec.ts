@@ -19,10 +19,10 @@ test('an accidental start can be reset from Stop; the coach floats on every page
   // "Accidental" start: one set logged.
   await page.getByRole('button', { name: /^Start Day 1$/ }).click();
   await expect(page.getByRole('timer', { name: 'Session time' })).toBeVisible();
-  await page.getByLabel(/^Set \d+ weight$/).first().fill('40');
-  await page.getByLabel(/^Set \d+ reps$/).first().fill('8');
-  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
-  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeVisible();
+  await page.getByLabel(/ set \d+ weight$/).first().fill('40');
+  await page.getByLabel(/ set \d+ reps$/).first().fill('8');
+  await page.getByRole('button', { name: /^Tick .+ set \d+$/ }).first().click();
+  await expect(page.getByRole('button', { name: / set 1 done$/ }).first()).toBeVisible();
 
   // In session the coach suggestions follow the session.
   await fab.click();
@@ -38,28 +38,30 @@ test('an accidental start can be reset from Stop; the coach floats on every page
 
   await expect(page.getByRole('heading', { name: /Day 1 · .* is up next/ })).toBeVisible();
   await expect(page.getByRole('timer', { name: 'Session time' })).toHaveCount(0);
-  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await expect(page.getByLabel(/ set \d+ weight$/)).toHaveCount(0);
 
   // Still reset after a reload (nothing came back from the local store).
   await page.reload();
   await expect(page.getByRole('heading', { name: /Day 1 · .* is up next/ })).toBeVisible();
   // Starting again shows empty sets: the discarded one didn't come back.
   await page.getByRole('button', { name: /^Start Day 1$/ }).click();
-  await expect(page.getByLabel(/^Set \d+ reps$/).first()).toHaveValue('');
-  await expect(page.getByRole('button', { name: /^Set \d+ done$/ })).toHaveCount(0);
+  await expect(page.getByLabel(/ set \d+ reps$/).first()).toHaveValue('');
+  await expect(page.getByRole('button', { name: / set \d+ done$/ })).toHaveCount(0);
 
   // Reps first, then tick: the prefilled weight is saved with the set.
-  await page.getByLabel(/^Set \d+ reps$/).first().fill('9');
-  await page.getByLabel(/^Set \d+ reps$/).first().blur();
-  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
-  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeVisible();
+  await page.getByLabel(/ set \d+ reps$/).first().fill('9');
+  await page.getByLabel(/ set \d+ reps$/).first().blur();
+  await page.getByRole('button', { name: /^Tick .+ set \d+$/ }).first().click();
+  await expect(page.getByRole('button', { name: / set 1 done$/ }).first()).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel(/^Set \d+ weight$/).first()).not.toHaveValue('');
+  await expect(page.getByLabel(/ set \d+ weight$/).first()).not.toHaveValue('');
 
   // Finish later keeps progress.
   await page.getByRole('button', { name: /^Stop$/ }).click();
   await stop.getByRole('button', { name: /Finish later/ }).click();
-  await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Day 1 · .* — paused/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Resume$/ })).toBeVisible();
+  // Paused: the coach button is back (it hides only while actively training).
 
   await page.getByRole('link', { name: 'History', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Open AI coach' })).toBeVisible();

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Bike, Play, Square, RotateCcw, Pause } from 'lucide-react';
+import { CheckCircle2, Bike, Play, Square, RotateCcw, Pause, Sparkles } from 'lucide-react';
 import { getDb } from '@/lib/local/db';
 import { completeSession, resetSession, saveSet, startSession, updateSessionFields, LocalRuleError, type SetPatch } from '@/lib/local/actions';
-import { useLastWeights, useSessionBundle, type SessionBundle } from '@/lib/local/hooks';
+import { useLastWeights, usePause, useSessionBundle, type SessionBundle } from '@/lib/local/hooks';
+import { activeMs, clearPause, effectivePause, isPaused, pauseSession, resumeSession, type PauseState } from '@/lib/local/pause';
+import { openCoach } from '@/lib/ui/overlays';
 import {
   BAR_EQUIPMENT,
   BAR_KG,
@@ -19,6 +21,7 @@ import {
 } from '@/lib/program';
 import ExerciseBlock, { type LoggerMode } from './ExerciseBlock';
 import RoutineCard from './RoutineCard';
+import { VideoButton } from './VideoSheet';
 import { startRestTimer, stopRestTimer } from '../shared/RestTimer';
 import { toast } from '../shared/Toast';
 import { sound, useWakeLock } from './sound';
@@ -67,7 +70,14 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
   const [stopOpen, setStopOpen] = useState(false);
   const loggedSets = items.reduce((n, i) => n + i.logs.filter((l) => l.done || l.weight_kg !== null || l.reps !== null || l.seconds !== null).length, 0);
 
-  useWakeLock(session.status === 'in_progress');
+  // "Finish later" pauses locally: active-time timer, no wake lock, rest cleared.
+  const pauseStored = usePause(session.id);
+  const pause = effectivePause(pauseStored, session.started_at);
+  const paused = running && isPaused(pause);
+  const workingTotal = items.reduce((n, i) => n + i.se.sets, 0);
+  const workingDone = items.reduce((n, i) => n + new Set(i.logs.filter((l) => l.done && l.set_index < i.se.sets).map((l) => l.set_index)).size, 0);
+
+  useWakeLock(running && !paused);
 
   // Warm-up / cool-down: guidance only (localStorage ticks, never logged, never
   // part of completion). Ramp-up follows the first lift's prefilled weight.
@@ -86,10 +96,24 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
       }
     : null;
 
-  const save = (sessionExerciseId: string) => (setIndex: number, patch: SetPatch) =>
-    saveSet(getDb(), userId, { sessionExerciseId, setIndex, patch }).catch((e) => {
+  const save = (sessionExerciseId: string) => async (setIndex: number, patch: SetPatch) => {
+    // Logging while paused means you're back: resume the timer.
+    if (paused) await resumeSession(getDb(), session.id, session.started_at);
+    return saveSet(getDb(), userId, { sessionExerciseId, setIndex, patch }).catch((e) => {
       throw new Error(ruleMessage(e));
     });
+  };
+
+  async function pauseNow() {
+    await pauseSession(getDb(), session.id, session.started_at);
+    stopRestTimer();
+    setStopOpen(false);
+    toast('Paused — resume any time');
+  }
+
+  async function resumeNow() {
+    await resumeSession(getDb(), session.id, session.started_at);
+  }
 
   const onTicked = (rest: number, exerciseDone: boolean) => {
     if (exerciseDone) sound.nextExercise();
@@ -113,6 +137,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
     setBusy(true);
     try {
       await resetSession(getDb(), userId, session.id);
+      await clearPause(getDb(), session.id);
       stopRestTimer();
       setStopOpen(false);
       toast(`${dayInfo(session).label} reset — start it when you're ready`);
@@ -127,6 +152,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
     setBusy(true);
     try {
       const r = await completeSession(getDb(), userId, session.id);
+      await clearPause(getDb(), session.id);
       sound.sessionComplete();
       stopRestTimer();
       toast(r.programComplete ? 'Program complete!' : `${dayInfo(session).label} complete`);
@@ -151,7 +177,16 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
         </button>
       )}
 
-      {running && <SessionBar startedAt={session.started_at} onStop={() => setStopOpen(true)} />}
+      {running && (
+        <SessionBar
+          pause={pause}
+          paused={paused}
+          done={workingDone}
+          total={workingTotal}
+          onResume={() => void resumeNow()}
+          onStop={() => setStopOpen(true)}
+        />
+      )}
 
       {stopOpen && (
         <StopSheet
@@ -160,6 +195,7 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
           busy={busy}
           onComplete={() => void complete()}
           onReset={() => void reset()}
+          onPause={() => void pauseNow()}
           onClose={() => setStopOpen(false)}
         />
       )}
@@ -176,7 +212,29 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
         />
       )}
 
-      {items.map((item) => (
+      {mode === 'preview' ? (
+        // Before Start (or a locked preview): one compact list, not a screen of empty cards.
+        <section aria-label="Exercises" className="bg-bg2 border border-border rounded-[10px] mb-3 divide-y divide-border">
+          {items.map((item) => {
+            const name = item.exercise?.name ?? item.se.exercise_id;
+            const kg = prefillWeight(lastWeights[item.se.exercise_id] ?? null, session.is_deload, item.se.target_kg);
+            return (
+              <div key={item.se.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate">{name}</div>
+                  <div className="text-xs text-text3">
+                    {item.se.sets} × {item.se.rep_lo}–{item.se.rep_hi}
+                    {item.exercise?.is_timed ? ' s' : ''}
+                    {kg !== null ? ` · ${kg} kg` : ''}
+                  </div>
+                </div>
+                <VideoButton videoKey={item.se.exercise_id} name={name} />
+              </div>
+            );
+          })}
+        </section>
+      ) : (
+        items.map((item) => (
         <ExerciseBlock
           key={item.se.id}
           item={item}
@@ -186,7 +244,8 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
           onSave={save(item.se.id)}
           onTicked={onTicked}
         />
-      ))}
+        ))
+      )}
 
       {session.cardio_target && (
         <label className={`flex items-center gap-3 bg-bg2 border border-border rounded-[10px] p-3.5 mb-3 ${mode === 'preview' ? 'opacity-60' : ''}`}>
@@ -257,27 +316,63 @@ function formatElapsed(ms: number): string {
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** Sticky bar while a session runs: elapsed time (from started_at, so it survives reloads) + Stop. */
-function SessionBar({ startedAt, onStop }: { startedAt: string | null; onStop: () => void }) {
+/**
+ * Sticky bar while a session runs: active training time (survives reloads and
+ * excludes paused time), sets done, the coach, and Stop. Paused: Resume.
+ */
+function SessionBar({
+  pause,
+  paused,
+  done,
+  total,
+  onResume,
+  onStop,
+}: {
+  pause: PauseState;
+  paused: boolean;
+  done: number;
+  total: number;
+  onResume: () => void;
+  onStop: () => void;
+}) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
+    if (paused) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, []);
-  const elapsed = startedAt ? now - new Date(startedAt).getTime() : 0;
+  }, [paused]);
+  const active = activeMs(pause, now);
   return (
-    <div className="sticky top-[57px] z-30 -mx-4 px-4 py-2 mb-3 bg-bg/95 backdrop-blur border-b border-accent/15 flex items-center gap-3">
-      <span className="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden />
-      <span className="text-[11px] font-bold uppercase tracking-widest text-text2">In session</span>
-      <span className="font-condensed text-xl font-black tabular-nums" aria-label="Session time" role="timer">
-        {formatElapsed(elapsed)}
-      </span>
-      <button
-        onClick={onStop}
-        className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-bg3 border border-border text-sm font-bold active:scale-95"
-      >
-        <Square size={13} fill="currentColor" /> Stop
+    <div className="sticky top-[57px] z-30 -mx-4 px-4 py-2 mb-3 bg-bg/95 backdrop-blur border-b border-accent/15 flex items-center gap-2">
+      {paused ? <Pause size={14} className="text-warn flex-shrink-0" aria-hidden /> : <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" aria-hidden />}
+      <div className="min-w-0">
+        <div className="text-xs font-bold uppercase tracking-widest text-text2 leading-none">{paused ? 'Paused' : 'In session'}</div>
+        <div className="flex items-baseline gap-2">
+          <span className="font-condensed text-xl font-black tabular-nums" aria-label="Session time" role="timer">
+            {formatElapsed(active)}
+          </span>
+          <span className="text-xs text-text3 tabular-nums">
+            {done}/{total} sets
+          </span>
+        </div>
+      </div>
+      <button onClick={openCoach} aria-label="Open AI coach" className="ml-auto w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-lg text-accent">
+        <Sparkles size={18} />
       </button>
+      {paused ? (
+        <>
+          <button onClick={onStop} aria-label="Stop" className="h-11 w-11 flex-shrink-0 flex items-center justify-center rounded-lg text-text2">
+            <Square size={13} fill="currentColor" />
+          </button>
+          <button onClick={onResume} className="h-11 flex-shrink-0 flex items-center gap-1.5 px-4 rounded-lg bg-accent text-bg text-sm font-bold active:scale-95">
+            <Play size={13} fill="currentColor" /> Resume
+          </button>
+        </>
+      ) : (
+        <button onClick={onStop} className="h-11 flex-shrink-0 flex items-center gap-1.5 px-4 rounded-lg bg-bg3 border border-border text-sm font-bold active:scale-95">
+          <Square size={13} fill="currentColor" /> Stop
+        </button>
+      )}
     </div>
   );
 }
@@ -292,6 +387,7 @@ function StopSheet({
   busy,
   onComplete,
   onReset,
+  onPause,
   onClose,
 }: {
   missing: number;
@@ -299,6 +395,7 @@ function StopSheet({
   busy: boolean;
   onComplete: () => void;
   onReset: () => void;
+  onPause: () => void;
   onClose: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -351,7 +448,7 @@ function StopSheet({
             <p className="text-sm text-text2">
               {missing} working set{missing === 1 ? '' : 's'} left. Sessions can&apos;t be skipped — finish later, or reset if you started by accident.
             </p>
-            <button disabled={busy} onClick={onClose} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-bg3 border border-border disabled:opacity-60">
+            <button disabled={busy} onClick={onPause} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-bg3 border border-border disabled:opacity-60">
               <Pause size={16} /> Finish later
             </button>
           </>

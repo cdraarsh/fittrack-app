@@ -104,11 +104,11 @@ export default function RoutineCard({ kind, sessionId, items, minutes, defaultOp
             {title} · ~{minutes} min
           </span>
           {!readOnly && done > 0 && (
-            <span className="text-[11px] text-text3 font-semibold">
+            <span className="text-xs text-text3 font-semibold">
               {done}/{total}
             </span>
           )}
-          <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-text3">Optional</span>
+          <span className="ml-auto text-xs font-bold uppercase tracking-widest text-text3">Optional</span>
           <ChevronDown size={18} className={`text-text3 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </button>
       </h3>
@@ -131,7 +131,7 @@ export default function RoutineCard({ kind, sessionId, items, minutes, defaultOp
 
         {ramp && ramp.sets.length > 0 && (
           <div className="mt-2 pt-2 border-t border-border">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-text3 mb-1">Ramp-up · {ramp.exerciseName}</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-text3 mb-1">Ramp-up · {ramp.exerciseName}</div>
             <ul>
               {ramp.sets.map((s, i) => (
                 <li key={i} className="flex items-center gap-2 py-1">

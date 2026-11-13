@@ -10,7 +10,9 @@ import { Sparkles } from 'lucide-react';
 import CoachCard from './CoachCard';
 import { dayInfo } from '@/lib/program';
 import type { CoachContext, CoachPage } from '@/lib/ai/coach';
-import { useActiveProgram, useLocalUserId, useProgramSessions, useProgress, useSessionBundle, useSettings } from '@/lib/local/hooks';
+import { useActiveProgram, useLocalUserId, usePause, useProgramSessions, useProgress, useSessionBundle, useSettings } from '@/lib/local/hooks';
+import { effectivePause, isPaused } from '@/lib/local/pause';
+import { useOverlays } from '@/lib/ui/overlays';
 
 const PAGES: CoachPage[] = ['today', 'strength', 'history', 'settings'];
 
@@ -23,6 +25,7 @@ export function useCoachContext(): CoachContext {
   const progress = useProgress(sessions, settings?.unlock_rule ?? 'next_calendar_day', settings?.timezone ?? 'UTC');
   const current = progress?.current ?? progress?.waiting ?? null;
   const bundle = useSessionBundle(current?.id);
+  const pauseStored = usePause(current?.id);
   const [minute, setMinute] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setMinute(Date.now()), 60_000);
@@ -51,13 +54,15 @@ export function useCoachContext(): CoachContext {
         setsDone,
         setsTotal,
         nextExercise,
+        paused: current.status === 'in_progress' && isPaused(effectivePause(pauseStored, current.started_at)),
       },
     };
-  }, [pathname, current, bundle, minute]);
+  }, [pathname, current, bundle, minute, pauseStored]);
 }
 
 function suggestionsFor(ctx: CoachContext): string[] {
   const s = ctx.session;
+  if (s?.status === 'in_progress' && s.paused) return ['Resume now or rest today?', 'How much is left today?', 'Something hurts — swap it?'];
   if (s?.status === 'in_progress') {
     return [
       s.nextExercise ? `What weight for ${s.nextExercise}?` : 'What weight next set?',
@@ -75,12 +80,29 @@ export default function FloatingCoach() {
   const context = useCoachContext();
   const suggestions = useMemo(() => suggestionsFor(context), [context]);
   const inSession = context.session?.status === 'in_progress';
+  const overlays = useOverlays();
+  // UX_PLAN §7: hidden during an active session (the session bar has a coach
+  // icon), while the rest dock owns the bottom, and while the keyboard is up.
+  // On Today the session bar carries the coach while a session is open; other
+  // screens keep the floating button so the coach is always one tap away.
+  const hideFab = (inSession && context.page === 'today') || overlays.resting || overlays.inputFocused;
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('fittrack:coach-open', onOpen);
+    return () => window.removeEventListener('fittrack:coach-open', onOpen);
+  }, []);
 
   // Return focus to the coach button when the panel closes.
   const fabRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
+  const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (wasOpen.current && !open) fabRef.current?.focus();
+    if (open && !wasOpen.current) opener.current = document.activeElement as HTMLElement | null;
+    if (wasOpen.current && !open) {
+      const back = opener.current && document.contains(opener.current) ? opener.current : fabRef.current;
+      back?.focus();
+    }
     wasOpen.current = open;
   }, [open]);
 
@@ -93,7 +115,7 @@ export default function FloatingCoach() {
 
   return (
     <>
-      {!open && (
+      {!open && !hideFab && (
         <button
           ref={fabRef}
           onClick={() => setOpen(true)}
@@ -118,7 +140,6 @@ export default function FloatingCoach() {
               context={context}
               suggestions={suggestions}
               onClose={() => setOpen(false)}
-              autoFocus
             />
           </div>
         </div>

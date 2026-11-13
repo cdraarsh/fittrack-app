@@ -66,6 +66,17 @@ export default function CoachCard({ className = '', context = null, suggestions 
   }, [autoFocus]);
 
   const capped = cap !== null && cap.remaining <= 0;
+  const [online, setOnline] = useState<boolean | null>(null);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
 
   async function send(text?: string) {
     const msg = (text ?? input).trim();
@@ -137,10 +148,10 @@ export default function CoachCard({ className = '', context = null, suggestions 
     >
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-accent/5">
         <MessageCircle size={14} className="text-accent flex-shrink-0" />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-accent">Coach</span>
-        {!available && <span className="text-[10px] text-text3">offline mode</span>}
+        <span className="text-xs font-bold uppercase tracking-wider text-accent">Coach</span>
+        {!available && <span className="text-xs text-text3">offline mode</span>}
         {cap && (
-          <span className="ml-auto text-[10px] text-text3" data-testid="coach-remaining">
+          <span className="ml-auto text-xs text-text3" data-testid="coach-remaining">
             {cap.remaining} message{cap.remaining !== 1 ? 's' : ''} left today
           </span>
         )}
@@ -159,7 +170,7 @@ export default function CoachCard({ className = '', context = null, suggestions 
             className={`text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'assistant' ? 'text-text1' : 'text-text2 text-right'}`}
           >
             {m.role === 'assistant' && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-accent mr-1.5">Coach</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-accent mr-1.5">Coach</span>
             )}
             {m.content ||
               (loading && i === messages.length - 1 ? (
@@ -167,6 +178,7 @@ export default function CoachCard({ className = '', context = null, suggestions 
               ) : null)}
           </div>
         ))}
+        {online === false && !error && <div className="text-xs text-text2 bg-bg3 rounded-lg px-3 py-2">The coach needs a connection. Your workout still logs offline.</div>}
         {error && <div className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</div>}
         {capped && <div className="text-xs text-text3 text-center pt-1">Daily limit reached. Back tomorrow.</div>}
       </div>
@@ -177,7 +189,7 @@ export default function CoachCard({ className = '', context = null, suggestions 
             <button
               key={q}
               type="button"
-              disabled={loading}
+              disabled={loading || online === false}
               onClick={() => void send(q)}
               className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full bg-bg3 border border-border text-text2 disabled:opacity-40"
             >

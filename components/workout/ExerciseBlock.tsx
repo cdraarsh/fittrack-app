@@ -40,6 +40,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
   const valueRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const timed = exercise?.is_timed ?? false;
+  const exName = exercise?.name ?? se.exercise_id;
   const swapped = se.exercise_id !== se.prescribed_exercise_id;
   const byIndex = new Map(logs.map((l) => [l.set_index, l]));
   const prefill = prefillWeight(lastWeight, isDeload, se.target_kg);
@@ -112,7 +113,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
       <div className="flex items-start justify-between mb-0.5">
         <div className="font-condensed text-[17px] font-bold leading-tight">
           {exercise?.name ?? se.exercise_id}
-          {swapped && <span className="text-[11px] text-text3 font-normal ml-1">(swapped from {prescribed?.name})</span>}
+          {swapped && <span className="text-xs text-text3 font-normal ml-1">(swapped from {prescribed?.name})</span>}
         </div>
         <div className="flex items-center -mr-2 -my-2.5 ml-1 flex-shrink-0">
           <VideoButton videoKey={se.exercise_id} name={exercise?.name ?? se.exercise_id} />
@@ -127,7 +128,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
           )}
         </div>
       </div>
-      <div className="text-[11px] text-text3 font-semibold tracking-wide mb-2.5">
+      <div className="text-xs text-text3 font-semibold tracking-wide mb-2.5">
         {se.sets} × {se.rep_lo}
         {se.rep_lo !== se.rep_hi ? `–${se.rep_hi}` : ''}
         {timed ? 's' : ' reps'} · Rest {se.rest_s}s
@@ -135,17 +136,17 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
       </div>
 
       {exercise?.cue && mode !== 'preview' && (
-        <div className="flex items-start gap-2 text-warn bg-warn/5 border border-warn/12 rounded-lg p-2 mb-3 text-xs leading-snug">
+        <div className="flex items-start gap-2 text-text2 bg-bg3/60 rounded-lg p-2 mb-3 text-xs leading-snug">
           <Lightbulb size={13} className="flex-shrink-0 mt-0.5" />
           <span>{isDeload ? `Deload: ~60% of your usual load, same reps. ${exercise.cue}` : exercise.cue}</span>
         </div>
       )}
 
       {mode !== 'preview' && (
-        <div className="grid grid-cols-[26px_1fr_1fr_44px] gap-1.5 items-center">
-          <span className="text-[10px] text-text3 font-bold uppercase">#</span>
-          <span className="text-[10px] text-text3 font-bold uppercase">kg</span>
-          <span className="text-[10px] text-text3 font-bold uppercase">{timed ? 'sec' : 'reps'}</span>
+        <div className="grid grid-cols-[24px_1fr_1fr_56px] gap-2 items-center">
+          <span className="text-xs text-text3 font-bold uppercase">#</span>
+          <span className="text-xs text-text3 font-bold uppercase">kg</span>
+          <span className="text-xs text-text3 font-bold uppercase">{timed ? 'sec' : 'reps'}</span>
           <span />
           {Array.from({ length: se.sets }, (_, i) => {
             const log = byIndex.get(i);
@@ -155,7 +156,7 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
             const editable = mode === 'active' || (mode === 'complete' && done);
             return (
               <React.Fragment key={i}>
-                <span className="text-xs text-text3 font-semibold text-center">
+                <span className="text-xs text-text3 font-semibold text-center" aria-hidden>
                   {i + 1}
                   {log?.source === 'watch' && <Watch size={9} className="inline ml-0.5 text-info" aria-label="from watch" />}
                 </span>
@@ -163,34 +164,38 @@ export default function ExerciseBlock({ item, mode, isDeload, lastWeight, onSave
                   ref={(el) => { weightRefs.current[i] = el; }}
                   type="number"
                   inputMode="decimal"
-                  aria-label={`Set ${i + 1} weight`}
+                  aria-label={`${exName} set ${i + 1} weight`}
                   defaultValue={w ?? undefined}
                   placeholder="kg"
                   readOnly={!editable}
+                  enterKeyHint="next"
+                  onFocus={(e) => e.currentTarget.select()}
                   onBlur={(e) => void blurSave(i, 'weight_kg', e.target.value)}
-                  className="bg-bg3 border border-border rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
+                  className="h-12 bg-bg3 border border-border-strong rounded-lg text-base font-semibold text-center px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
                 />
                 <input
                   ref={(el) => { valueRefs.current[i] = el; }}
                   type="number"
                   inputMode="numeric"
-                  aria-label={`Set ${i + 1} ${timed ? 'seconds' : 'reps'}`}
+                  aria-label={`${exName} set ${i + 1} ${timed ? 'seconds' : 'reps'}`}
                   defaultValue={v ?? undefined}
                   placeholder={`${se.rep_lo}–${se.rep_hi}`}
                   readOnly={!editable}
+                  enterKeyHint="done"
+                  onFocus={(e) => e.currentTarget.select()}
                   onBlur={(e) => void blurSave(i, timed ? 'seconds' : 'reps', e.target.value)}
-                  className="bg-bg3 border border-border rounded-lg text-sm font-semibold text-center py-2 px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
+                  className="h-12 bg-bg3 border border-border-strong rounded-lg text-base font-semibold text-center px-1 w-full outline-none focus:border-accent focus:bg-accent/[0.04] read-only:opacity-40"
                 />
                 <button
-                  aria-label={done ? `Set ${i + 1} done` : `Tick set ${i + 1}`}
+                  aria-label={done ? `${exName} set ${i + 1} done` : `Tick ${exName} set ${i + 1}`}
                   aria-pressed={done}
                   disabled={mode !== 'active'}
                   onClick={() => void tick(i)}
-                  className={`flex items-center justify-center rounded-lg py-2 w-full border transition-all cursor-pointer active:scale-95 ${
+                  className={`h-12 flex items-center justify-center rounded-lg w-full border transition-all cursor-pointer active:scale-95 ${
                     mode !== 'active' && !done ? 'opacity-30' : ''
-                  } ${done ? 'bg-accent/10 border-accent/35 text-accent' : 'bg-bg3 border-border text-text3'}`}
+                  } ${done ? 'bg-accent border-accent text-black' : 'bg-bg3 border-border-strong text-text2'}`}
                 >
-                  {done ? <Check size={14} strokeWidth={2.5} /> : <Circle size={14} />}
+                  {done ? <Check size={20} strokeWidth={3} /> : <Circle size={18} />}
                 </button>
               </React.Fragment>
             );

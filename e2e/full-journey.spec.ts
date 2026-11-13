@@ -65,7 +65,7 @@ test('1. first launch: start the program; no Program tab; Day 1 is up next and r
   await page.getByRole('button', { name: /^Start program$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push is up next/ })).toBeVisible();
   await expect(page.getByText(/Cycle 1 · Week 1/)).toBeVisible();
-  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await expect(page.getByLabel(/ set \d+ weight$/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Stop$/ })).toHaveCount(0);
   await expectSynced();
 });
@@ -113,30 +113,34 @@ test('4. Start: timer, inputs appear with prefilled weight; coach knows the sess
   await page.getByRole('button', { name: /^Start Day 1$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push in progress/ })).toBeVisible();
   await expect(page.getByRole('timer', { name: 'Session time' })).toBeVisible();
-  await expect(page.getByLabel(/^Set \d+ weight$/).first()).toHaveValue('40');
+  await expect(page.getByLabel(/ set \d+ weight$/).first()).toHaveValue('40');
   await expect(page.getByRole('button', { name: /^Start Day 1$/ })).toHaveCount(0);
 
+  await expect(page.getByRole('button', { name: 'Open AI coach' })).toHaveCount(1); // session bar only, no floating button
   await page.getByRole('button', { name: 'Open AI coach' }).click();
   await expect(coachDialog().getByRole('button', { name: /^What weight for Flat Barbell Bench Press\?/ })).toBeVisible();
+  await expect(coachDialog().getByLabel('Message the coach')).not.toBeFocused(); // chips first, no keyboard
   await page.keyboard.press('Escape');
   await expect(coachDialog()).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open AI coach' })).toBeFocused();
 });
 
 test('5. validation: ticking without reps is refused; reps-first keeps the prefilled weight', async () => {
-  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
+  await page.getByRole('button', { name: /^Tick .+ set \d+$/ }).first().click();
   await expect(toast(/Enter reps first/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Set \d+ done$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: / set \d+ done$/ })).toHaveCount(0);
 
-  const reps = page.getByLabel(/^Set \d+ reps$/).first();
+  const reps = page.getByLabel(/ set \d+ reps$/).first();
   await reps.fill('8');
   await reps.blur();
-  await page.getByRole('button', { name: /^Tick set \d+$/ }).first().click();
-  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: /^Tick .+ set \d+$/ }).first().click();
+  await expect(page.getByRole('button', { name: / set 1 done$/ }).first()).toBeVisible();
   await expect(page.getByText(/^Rest$/)).toBeVisible();
+  await page.getByRole('button', { name: '15 seconds more rest' }).click();
+  await expect(page.getByRole('button', { name: 'Open AI coach' })).toHaveCount(1);
   await page.reload();
-  await expect(page.getByLabel(/^Set \d+ weight$/).first()).toHaveValue('40');
-  await expect(page.getByLabel(/^Set \d+ reps$/).first()).toHaveValue('8');
+  await expect(page.getByLabel(/ set \d+ weight$/).first()).toHaveValue('40');
+  await expect(page.getByLabel(/ set \d+ reps$/).first()).toHaveValue('8');
 });
 
 test('6. Stop sheet: Escape and Keep going close it; Finish later keeps progress', async () => {
@@ -150,8 +154,19 @@ test('6. Stop sheet: Escape and Keep going close it; Finish later keeps progress
   await expect(stopDialog()).toHaveCount(0);
   await page.getByRole('button', { name: /^Stop$/ }).click();
   await stopDialog().getByRole('button', { name: /Finish later/ }).click();
-  await expect(page.getByRole('heading', { name: /in progress/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeVisible();
+  // Finish later = paused: heading, Resume, the timer stops, rest is cleared, progress kept.
+  await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push — paused/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Resume$/ })).toBeVisible();
+  await expect(page.getByText(/^Rest$/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: / set 1 done$/ }).first()).toBeVisible();
+  const t1 = await page.getByRole('timer', { name: 'Session time' }).innerText();
+  await page.waitForTimeout(2200);
+  expect(await page.getByRole('timer', { name: 'Session time' }).innerText()).toBe(t1);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /— paused/ })).toBeVisible();
+  await page.getByRole('button', { name: /^Resume$/ }).click();
+  await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push in progress/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Resume$/ })).toHaveCount(0);
 });
 
 test('7. Reset needs a second confirmation, discards the set, cancels rest, and sticks after sync + reload', async () => {
@@ -160,7 +175,7 @@ test('7. Reset needs a second confirmation, discards the set, cancels rest, and 
   await stopDialog().getByRole('button', { name: /Yes, discard 1 logged set and reset/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push is up next/ })).toBeVisible();
   await expect(page.getByText(/^Rest$/)).toHaveCount(0);
-  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await expect(page.getByLabel(/ set \d+ weight$/)).toHaveCount(0);
   await expectSynced();
   await page.reload();
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push is up next/ })).toBeVisible();
@@ -190,8 +205,8 @@ test('8. swap within the group and revert', async () => {
 
 test('9. log every set, half of them offline (reload offline works), Complete only when all are done', async () => {
   const fill = async (from: number, to: number) => {
-    const weights = page.getByLabel(/^Set \d+ weight$/);
-    const reps = page.getByLabel(/^Set \d+ reps$/);
+    const weights = page.getByLabel(/ set \d+ weight$/);
+    const reps = page.getByLabel(/ set \d+ reps$/);
     for (let i = from; i < to; i++) {
       const w = weights.nth(i);
       if (!(await w.inputValue())) await w.fill('20');
@@ -200,7 +215,7 @@ test('9. log every set, half of them offline (reload offline works), Complete on
     }
   };
   const tickAll = async (limit: number) => {
-    const ticks = page.getByRole('button', { name: /^Tick set \d+$/ });
+    const ticks = page.getByRole('button', { name: /^Tick .+ set \d+$/ });
     for (let n = 0; n < limit && (await ticks.count()) > 0; n++) {
       const b = await ticks.first().elementHandle();
       await b!.scrollIntoViewIfNeeded();
@@ -209,7 +224,7 @@ test('9. log every set, half of them offline (reload offline works), Complete on
       await dismissRest();
     }
   };
-  const total = await page.getByLabel(/^Set \d+ reps$/).count();
+  const total = await page.getByLabel(/ set \d+ reps$/).count();
   expect(total).toBeGreaterThan(10);
   await fill(0, total);
   await expect(page.getByRole('button', { name: /working sets? to go/ })).toBeDisabled();
@@ -221,10 +236,10 @@ test('9. log every set, half of them offline (reload offline works), Complete on
   await expect(page.getByText(/Offline/)).toBeVisible();
   await page.reload(); // served by the service worker
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push in progress/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Set \d+ done$/ })).toHaveCount(10);
+  await expect(page.getByRole('button', { name: / set \d+ done$/ })).toHaveCount(10);
   await goOnline();
   await tickAll(100);
-  await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Tick .+ set \d+$/ })).toHaveCount(0);
   await expectSynced();
 });
 
@@ -236,7 +251,7 @@ test('10. cool-down opens when all working sets are done; Stop → Complete; Day
   await expect(page.getByText(/Unlocks/)).toBeVisible();
   await expect(page.getByRole('heading', { name: /Day 2 · Lower · Quads/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Start Day 2$/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Tick set \d+$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Tick .+ set \d+$/ })).toHaveCount(0);
   await expectSynced();
   await page.reload();
   await expect(page.getByText(/Unlocks/)).toBeVisible(); // server agrees after pull
@@ -245,14 +260,14 @@ test('10. cool-down opens when all working sets are done; Stop → Complete; Day
 test('11. History: typo edit on a done set is saved; done sets cannot be unticked', async () => {
   await page.getByRole('link', { name: 'History', exact: true }).click();
   await page.getByRole('button', { name: /Day 1 · Upper · Push/ }).click();
-  const w = page.getByLabel(/^Set \d+ weight$/).first();
+  const w = page.getByLabel(/ set \d+ weight$/).first();
   await w.fill('42.5');
   await w.blur();
-  await expect(page.getByRole('button', { name: /^Set 1 done$/ }).first()).toBeDisabled();
+  await expect(page.getByRole('button', { name: / set 1 done$/ }).first()).toBeDisabled();
   await expectSynced();
   await page.reload();
   await page.getByRole('button', { name: /Day 1 · Upper · Push/ }).click();
-  await expect(page.getByLabel(/^Set \d+ weight$/).first()).toHaveValue('42.5');
+  await expect(page.getByLabel(/ set \d+ weight$/).first()).toHaveValue('42.5');
 });
 
 test('12. Strength tabs: Lifts shows progress; Garmin and Recovery explain the missing watch; arrow keys switch tabs', async () => {
