@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Lock, PartyPopper, Play, Scale } from 'lucide-react';
-import CoachCard from '@/components/coach/CoachCard';
 import Spinner from '@/components/app/Spinner';
 import DailyInsight from '@/components/app/DailyInsight';
 import SessionLogger, { ruleMessage } from '@/components/workout/SessionLogger';
@@ -78,7 +77,6 @@ export default function TodayPage() {
             {!canStart ? 'Checking for your program…' : finished ? 'Start next block' : 'Start program'}
           </button>
         </div>
-        <CoachCard />
       </div>
     );
   }
@@ -133,9 +131,6 @@ export default function TodayPage() {
           <p className="text-text2 text-sm">Every session is done — the next block will be offered here.</p>
         </div>
       )}
-
-      {/* Coach (AI track) */}
-      <CoachCard />
 
       <BodyWeightCard userId={userId} timeZone={tz} />
     </div>

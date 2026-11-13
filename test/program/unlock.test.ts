@@ -159,3 +159,33 @@ describe('advance — state machine', () => {
     expect(advance(mk(1), { type: 'log_set', sessionId: 'nope' }, ctx('2026-11-02T05:00:00Z')).error).toBe('not_found');
   });
 });
+
+describe('start and reset', () => {
+  const now = '2026-11-03T04:00:00Z';
+  it('start: up_next → in_progress with started_at; idempotent; refuses locked', () => {
+    const a = advance(mk(3), { type: 'start', sessionId: 's1' }, ctx(now));
+    expect(a.ok).toBe(true);
+    expect(status(a.sessions)).toEqual(['in_progress', 'locked', 'locked']);
+    expect(a.sessions[0].started_at).toBe(now);
+    const again = advance(a.sessions, { type: 'start', sessionId: 's1' }, ctx('2026-11-03T05:00:00Z'));
+    expect(again.changed).toEqual([]);
+    expect(again.sessions[0].started_at).toBe(now);
+    expect(advance(mk(3), { type: 'start', sessionId: 's2' }, ctx(now)).error).toBe('locked');
+  });
+
+  it('reset: in_progress → up_next, clears started_at, never touches later sessions', () => {
+    const started = advance(mk(3), { type: 'start', sessionId: 's1' }, ctx(now)).sessions;
+    const r = advance(started, { type: 'reset', sessionId: 's1' }, ctx(now));
+    expect(r.ok).toBe(true);
+    expect(status(r.sessions)).toEqual(['up_next', 'locked', 'locked']);
+    expect(r.sessions[0].started_at).toBeNull();
+    expect(r.current?.id).toBe('s1');
+  });
+
+  it('reset: no-op when up_next, refused when complete or locked', () => {
+    expect(advance(mk(2), { type: 'reset', sessionId: 's1' }, ctx(now)).changed).toEqual([]);
+    const done = train(mk(2), 's1', now).sessions;
+    expect(advance(done, { type: 'reset', sessionId: 's1' }, ctx(now)).error).toBe('already_complete');
+    expect(advance(done, { type: 'reset', sessionId: 's2' }, ctx(now)).error).toBe('locked');
+  });
+});

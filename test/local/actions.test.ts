@@ -10,6 +10,8 @@ import {
   refreshProgress,
   saveBodyWeight,
   saveSet,
+  startSession,
+  resetSession,
   seedExercises,
   startProgram,
   swapExercise,
@@ -29,14 +31,19 @@ let n = 0;
 const at = (s: string) => new Date(s);
 const statusOf = async () => (await db.program_sessions.where('program_id').equals(PID).sortBy('seq')).slice(0, 3).map((s) => s.status);
 
-async function sessionExercises(seq: number) {
-  const s = (await db.program_sessions.where('[program_id+seq]').equals([PID, seq]).first())!;
+/** The session for `seq`; an up-next one is started first (logging needs Start). */
+async function sessionExercises(seq: number, now?: Date) {
+  let s = (await db.program_sessions.where('[program_id+seq]').equals([PID, seq]).first())!;
+  if (s.status === 'up_next') {
+    await startSession(db, U, s.id, now);
+    s = (await db.program_sessions.get(s.id))!;
+  }
   const ses = (await db.session_exercises.where('session_id').equals(s.id).toArray()).sort((a, b) => a.position - b.position);
   return { s, ses };
 }
 
 async function doAllSets(seq: number, now: Date, weight = 40) {
-  const { s, ses } = await sessionExercises(seq);
+  const { s, ses } = await sessionExercises(seq, now);
   for (const se of ses) for (let i = 0; i < se.sets; i++) {
     await saveSet(db, U, { sessionExerciseId: se.id, setIndex: i, patch: { weight_kg: weight, reps: se.rep_hi, done: true } }, now);
   }
@@ -75,7 +82,7 @@ describe('local actions', () => {
     await doAllSets(1, at('2026-11-10T05:00:00Z'));
     await completeSession(db, U, s1.id, at('2026-11-10T06:00:00Z'));
     expect(await statusOf()).toEqual(['complete', 'locked', 'locked']);
-    const rpc = (await db.outbox.toArray()).find((o) => o.payload.kind === 'rpc')!;
+    const rpc = (await db.outbox.toArray()).find((o) => o.payload.kind === 'rpc' && o.payload.fn === 'complete_session')!;
     expect(rpc.payload).toEqual({ kind: 'rpc', fn: 'complete_session', args: { session_id: s1.id, client_completed_at: '2026-11-10T06:00:00.000Z' } });
 
     await refreshProgress(db, U, at('2026-11-10T18:00:00Z')); // 23:30 IST
@@ -204,5 +211,42 @@ describe('local actions (more)', () => {
     const r = await syncNow(db, client, U);
     expect(r).toMatchObject({ blocked: true, pulled: false });
     expect(calls.some((c) => c.kind === 'select')).toBe(false);
+  });
+
+  it('logging needs Start: typing into an up-next session is refused', async () => {
+    const s1 = (await db.program_sessions.where('[program_id+seq]').equals([PID, 1]).first())!;
+    expect(s1.status).toBe('up_next');
+    const se = (await db.session_exercises.where('session_id').equals(s1.id).first())!;
+    await expect(saveSet(db, U, { sessionExerciseId: se.id, setIndex: 0, patch: { weight_kg: 40 } })).rejects.toThrow('not_started');
+    expect(await db.set_logs.count()).toBe(0);
+    expect((await db.program_sessions.get(s1.id))!.status).toBe('up_next');
+  });
+
+  it('reset undoes an accidental start: sets and their unsent writes are dropped, server reset queued', async () => {
+    const { s, ses } = await sessionExercises(1);
+    await saveSet(db, U, { sessionExerciseId: ses[0].id, setIndex: 0, patch: { weight_kg: 40, reps: 8, done: true } });
+    await saveSet(db, U, { sessionExerciseId: ses[1].id, setIndex: 0, patch: { weight_kg: 10 } });
+    expect(await db.set_logs.count()).toBe(2);
+
+    await resetSession(db, U, s.id);
+    const after = (await db.program_sessions.get(s.id))!;
+    expect(after.status).toBe('up_next');
+    expect(after.started_at).toBeNull();
+    expect(await db.set_logs.count()).toBe(0);
+    const ops = (await db.outbox.toArray()).filter((o) => o.status === 'pending');
+    expect(ops.some((o) => o.key?.startsWith('set_logs:'))).toBe(false);
+    const fns = ops.filter((o) => o.payload.kind === 'rpc').map((o) => (o.payload as { fn: string }).fn);
+    expect(fns.slice(-2)).toEqual(['start_session', 'reset_session']);
+
+    // Start again works after a reset.
+    await startSession(db, U, s.id);
+    expect((await db.program_sessions.get(s.id))!.status).toBe('in_progress');
+  });
+
+  it('reset refuses a completed session', async () => {
+    const s = await doAllSets(1, at('2026-11-10T05:00:00Z'));
+    await completeSession(db, U, s.id, at('2026-11-10T06:00:00Z'));
+    await expect(resetSession(db, U, s.id)).rejects.toThrow('session_complete');
+    expect(await db.set_logs.count()).toBeGreaterThan(0);
   });
 });

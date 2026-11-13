@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { CheckCircle2, Bike } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, Bike, Play, Square, RotateCcw, Pause } from 'lucide-react';
 import { getDb } from '@/lib/local/db';
-import { completeSession, saveSet, updateSessionFields, LocalRuleError, type SetPatch } from '@/lib/local/actions';
+import { completeSession, resetSession, saveSet, startSession, updateSessionFields, LocalRuleError, type SetPatch } from '@/lib/local/actions';
 import { useLastWeights, useSessionBundle, type SessionBundle } from '@/lib/local/hooks';
 import { missingWorkingSets } from '@/lib/program';
 import ExerciseBlock, { type LoggerMode } from './ExerciseBlock';
-import { startRestTimer } from '../shared/RestTimer';
+import { startRestTimer, stopRestTimer } from '../shared/RestTimer';
 import { toast } from '../shared/Toast';
 import { sound, useWakeLock } from './sound';
 
@@ -19,6 +19,7 @@ const RULE_MESSAGES: Record<LocalRuleError['code'], string> = {
   cannot_untick: 'Completed sets can’t be unticked.',
   active_program_exists: 'A program is already running.',
   swap_not_allowed: 'Swap not allowed here.',
+  not_started: 'Tap Start to begin this session.',
 };
 
 export function ruleMessage(e: unknown): string {
@@ -42,11 +43,17 @@ export default function SessionLogger({ sessionId, userId, preview = false, onCo
 
 function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundle; userId: string; preview: boolean; onCompleted?: () => void }) {
   const { session, items } = bundle;
-  const mode: LoggerMode = preview || session.status === 'locked' ? 'preview' : session.status === 'complete' ? 'complete' : 'active';
+  // up_next stays read-only until Start: typing into a set never starts a session.
+  const mode: LoggerMode =
+    preview || session.status === 'locked' || session.status === 'up_next' ? 'preview' : session.status === 'complete' ? 'complete' : 'active';
+  const canStart = !preview && session.status === 'up_next';
+  const running = !preview && session.status === 'in_progress';
   const exerciseIds = useMemo(() => [...new Set(items.map((i) => i.se.exercise_id))], [items]);
   const lastWeights = useLastWeights(exerciseIds, session.id) ?? {};
   const missing = missingWorkingSets(items.map((i) => i.se), items.flatMap((i) => i.logs));
   const [busy, setBusy] = useState(false);
+  const [stopOpen, setStopOpen] = useState(false);
+  const loggedSets = items.reduce((n, i) => n + i.logs.filter((l) => l.done || l.weight_kg !== null || l.reps !== null || l.seconds !== null).length, 0);
 
   useWakeLock(session.status === 'in_progress');
 
@@ -61,12 +68,40 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
     startRestTimer(rest);
   };
 
+  async function start() {
+    setBusy(true);
+    try {
+      sound.start();
+      await startSession(getDb(), userId, session.id);
+    } catch (e) {
+      toast(ruleMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reset() {
+    setBusy(true);
+    try {
+      await resetSession(getDb(), userId, session.id);
+      stopRestTimer();
+      setStopOpen(false);
+      toast(`Day ${session.seq} reset — start it when you're ready`);
+    } catch (e) {
+      toast(ruleMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function complete() {
     setBusy(true);
     try {
       const r = await completeSession(getDb(), userId, session.id);
       sound.sessionComplete();
+      stopRestTimer();
       toast(r.programComplete ? 'Program complete!' : `Day ${session.seq} complete`);
+      setStopOpen(false);
       onCompleted?.();
     } catch (e) {
       toast(ruleMessage(e));
@@ -77,6 +112,29 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
 
   return (
     <div>
+      {canStart && (
+        <button
+          onClick={() => void start()}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-2 py-4 mb-3 rounded-xl font-condensed text-xl font-black bg-accent text-bg active:scale-[0.99] transition-transform disabled:opacity-60"
+        >
+          <Play size={20} fill="currentColor" /> Start Day {session.seq}
+        </button>
+      )}
+
+      {running && <SessionBar startedAt={session.started_at} onStop={() => setStopOpen(true)} />}
+
+      {stopOpen && (
+        <StopSheet
+          missing={missing}
+          loggedSets={loggedSets}
+          busy={busy}
+          onComplete={() => void complete()}
+          onReset={() => void reset()}
+          onClose={() => setStopOpen(false)}
+        />
+      )}
+
       {items.map((item) => (
         <ExerciseBlock
           key={item.se.id}
@@ -136,6 +194,131 @@ function Logger({ bundle, userId, preview, onCompleted }: { bundle: SessionBundl
           {missing > 0 ? `${missing} working set${missing === 1 ? '' : 's'} to go` : 'Complete session'}
         </button>
       )}
+    </div>
+  );
+}
+
+function formatElapsed(ms: number): string {
+  const t = Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 1000)) : 0;
+  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+  const mm = String(m).padStart(h ? 2 : 1, '0'), ss = String(sec).padStart(2, '0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Sticky bar while a session runs: elapsed time (from started_at, so it survives reloads) + Stop. */
+function SessionBar({ startedAt, onStop }: { startedAt: string | null; onStop: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = startedAt ? now - new Date(startedAt).getTime() : 0;
+  return (
+    <div className="sticky top-[57px] z-30 -mx-4 px-4 py-2 mb-3 bg-bg/95 backdrop-blur border-b border-accent/15 flex items-center gap-3">
+      <span className="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden />
+      <span className="text-[11px] font-bold uppercase tracking-widest text-text2">In session</span>
+      <span className="font-condensed text-xl font-black tabular-nums" aria-label="Session time" role="timer">
+        {formatElapsed(elapsed)}
+      </span>
+      <button
+        onClick={onStop}
+        className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-bg3 border border-border text-sm font-bold active:scale-95"
+      >
+        <Square size={13} fill="currentColor" /> Stop
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Stop: complete when every working set is done; otherwise pause (finish later)
+ * or reset an accidental start — never skip.
+ */
+function StopSheet({
+  missing,
+  loggedSets,
+  busy,
+  onComplete,
+  onReset,
+  onClose,
+}: {
+  missing: number;
+  loggedSets: number;
+  busy: boolean;
+  onComplete: () => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const [confirmReset, setConfirmReset] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Focus the first action on open, Escape closes (not mid-action), Tab stays
+  // inside, and focus returns to what opened it (the Stop button).
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    panelRef.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus();
+    return () => opener?.focus?.();
+  }, []);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !busy) {
+      e.stopPropagation();
+      onClose();
+    } else if (e.key === 'Tab') {
+      const items = [...(panelRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? [])];
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => !busy && onClose()} onKeyDown={onKeyDown}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stop-title"
+        className="w-full max-w-app bg-bg1 border-t border-border rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="stop-title" className="font-condensed text-2xl font-black">Stop session?</h3>
+        {missing === 0 ? (
+          <>
+            <p className="text-sm text-text2">Every working set is done.</p>
+            <button disabled={busy} onClick={onComplete} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-condensed text-lg font-bold bg-accent text-bg disabled:opacity-60">
+              <CheckCircle2 size={18} /> Complete session
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-text2">
+              {missing} working set{missing === 1 ? '' : 's'} left. Sessions can&apos;t be skipped — finish later, or reset if you started by accident.
+            </p>
+            <button disabled={busy} onClick={onClose} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-bg3 border border-border disabled:opacity-60">
+              <Pause size={16} /> Finish later
+            </button>
+          </>
+        )}
+        {missing > 0 &&
+          (confirmReset || loggedSets === 0 ? (
+            <button disabled={busy} onClick={onReset} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-danger/15 text-danger border border-danger/40 disabled:opacity-60">
+              <RotateCcw size={16} />
+              {loggedSets === 0 ? 'Reset — nothing logged yet' : `Yes, discard ${loggedSets} logged set${loggedSets === 1 ? '' : 's'} and reset`}
+            </button>
+          ) : (
+            <button disabled={busy} onClick={() => setConfirmReset(true)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-danger">
+              <RotateCcw size={14} /> Reset session (started by accident)
+            </button>
+          ))}
+        <button onClick={onClose} className="w-full py-2 text-sm text-text3">
+          Keep going
+        </button>
+      </div>
     </div>
   );
 }

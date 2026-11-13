@@ -11,6 +11,11 @@ export const sound = {
   setDone: () => playCue('tick'),
   nextExercise: () => playCue('next_exercise'),
   sessionComplete: () => playCue('session_complete'),
+  /** Start button: inside the tap gesture, so it also unlocks iOS audio for the session. */
+  start: () => {
+    getCuePlayer().unlock();
+    playCue('go');
+  },
   /** Settings "Test sound": runs inside the click gesture, so it also unlocks iOS audio. */
   test: () => {
     getCuePlayer().unlock();

@@ -15,7 +15,7 @@ export type OutboxPayload =
       ignoreDuplicates?: boolean;
     }
   | { kind: 'update'; table: 'program_sessions' | 'session_exercises'; id: string; patch: Record<string, unknown> }
-  | { kind: 'rpc'; fn: 'complete_session' | 'refresh_unlocks'; args: Record<string, unknown> };
+  | { kind: 'rpc'; fn: 'complete_session' | 'refresh_unlocks' | 'start_session' | 'reset_session'; args: Record<string, unknown> };
 
 export interface OutboxOp {
   /** Auto-increment: flush order. */

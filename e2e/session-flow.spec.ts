@@ -38,6 +38,12 @@ test('log Day 1 offline, complete it, Day 2 unlocks only the next day', async ({
   await page.getByRole('button', { name: /^Start program$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · .* is up next/ })).toBeVisible();
 
+  // Nothing can be logged until Start: no set inputs are shown yet.
+  await expect(page.getByLabel(/^Set \d+ weight$/)).toHaveCount(0);
+  await page.getByRole('button', { name: /^Start Day 1$/ }).click();
+  await expect(page.getByRole('heading', { name: /Day 1 · .* in progress/ })).toBeVisible();
+  await expect(page.getByRole('timer', { name: 'Session time' })).toBeVisible();
+
   // Values typed before a reload are kept (Dexie, save on blur).
   const total = await logAllSets(page);
   expect(total).toBeGreaterThan(0);

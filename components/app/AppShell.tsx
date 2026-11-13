@@ -8,6 +8,7 @@ import { useLocalUserId, useSettings, useSyncEngine, useSyncStatus, useOutboxCou
 import { useCueSetup } from '@/lib/audio/hooks';
 import RestTimer from '../shared/RestTimer';
 import Toast from '../shared/Toast';
+import FloatingCoach from '../coach/FloatingCoach';
 
 const NAV = [
   { href: '/today', label: 'Today', icon: Zap },
@@ -81,6 +82,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         })}
       </nav>
 
+      <FloatingCoach />
       <RestTimer />
       <Toast />
     </div>
