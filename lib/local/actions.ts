@@ -8,6 +8,7 @@ import { advance, allWorkingSetsDone, DEFAULT_TEMPLATE, generateProgram, localDa
 import type { BodyWeight, ProgramSession, SessionExercise, SetLog, UserSettings } from '@/lib/program/types';
 import { getMeta, setMeta, type FitDB } from './db';
 import { enqueue } from './outbox';
+import { pauseKey } from './pause';
 
 export class LocalRuleError extends Error {
   constructor(public code: 'locked' | 'incomplete' | 'not_found' | 'session_complete' | 'cannot_untick' | 'active_program_exists' | 'swap_not_allowed' | 'not_started') {
@@ -282,6 +283,7 @@ async function completeSessionNow(db: FitDB, userId: string, sessionId: string, 
   if (!wasComplete) {
     await enqueue(db, { kind: 'rpc', fn: 'complete_session', args: { session_id: sessionId, client_completed_at: iso(now) } });
   }
+  await db.meta.delete(pauseKey(sessionId));
   await applyProgression(db, session.program_id, r);
   return r;
 }
@@ -299,6 +301,7 @@ async function startSessionNow(db: FitDB, userId: string, sessionId: string, now
   if (!r.ok) throw new LocalRuleError(r.error === 'locked' ? 'locked' : 'not_found');
   if (session.status === 'up_next') {
     await enqueue(db, { kind: 'rpc', fn: 'start_session', args: { session_id: sessionId, client_started_at: iso(now) } });
+    await db.meta.delete(pauseKey(sessionId)); // a fresh start is never paused
     await applyProgression(db, session.program_id, r);
   }
   return r;
@@ -322,10 +325,11 @@ async function resetSessionNow(db: FitDB, userId: string, sessionId: string, now
   if (session.status !== 'in_progress') return r;
 
   await enqueue(db, { kind: 'rpc', fn: 'reset_session', args: { session_id: sessionId } });
+  await db.meta.delete(pauseKey(sessionId));
   await db.transaction('rw', [db.set_logs, db.outbox, db.program_sessions, db.programs], async () => {
     const logs = await db.set_logs.where('session_id').equals(sessionId).toArray();
     const keys = new Set(logs.map((l) => `set_logs:${l.id}`));
-    await db.outbox.filter((o) => o.status === 'pending' && !!o.key && keys.has(o.key)).delete();
+    await db.outbox.filter((o) => (o.status === 'pending' || o.status === 'failed') && !!o.key && keys.has(o.key)).delete();
     await db.set_logs.bulkDelete(logs.map((l) => l.id));
     await applyProgression(db, session.program_id, r);
   });

@@ -45,13 +45,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const isField = (t: EventTarget | null) =>
       t instanceof HTMLElement && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && !['checkbox', 'radio', 'range', 'button'].includes((t as HTMLInputElement).type)));
-    const onIn = (e: FocusEvent) => isField(e.target) && setOverlay({ inputFocused: true });
-    const onOut = (e: FocusEvent) => isField(e.target) && !isField(e.relatedTarget) && setOverlay({ inputFocused: false });
+    // Always derive from what is actually focused: a focused field can be
+    // removed (sheet closed, form remounted) without any focusout, so re-check
+    // after every focus change and poll briefly while a field counts as focused.
+    const check = () => setOverlay({ inputFocused: isField(document.activeElement) });
+    const onIn = (e: FocusEvent) => setOverlay({ inputFocused: isField(e.target) });
+    const onOut = (e: FocusEvent) => {
+      if (!isField(e.relatedTarget)) setOverlay({ inputFocused: false });
+      setTimeout(check, 0);
+    };
     document.addEventListener('focusin', onIn);
     document.addEventListener('focusout', onOut);
+    const poll = setInterval(check, 300);
     return () => {
       document.removeEventListener('focusin', onIn);
       document.removeEventListener('focusout', onOut);
+      clearInterval(poll);
     };
   }, []);
   const unreachable = sync.state === 'error' && humanizeError(sync.lastError) === UNREACHABLE;

@@ -88,17 +88,27 @@ export default function FloatingCoach() {
   const hideFab = (inSession && context.page === 'today') || overlays.resting || overlays.inputFocused;
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = () => openSheet();
     window.addEventListener('fittrack:coach-open', onOpen);
     return () => window.removeEventListener('fittrack:coach-open', onOpen);
   }, []);
 
   // Return focus to the coach button when the panel closes.
+  // Focus: remember what opened the coach at tap time (the floating button
+  // unmounts while open), move focus into the sheet without raising the
+  // keyboard, and return it to the opener (or the re-mounted button) on close.
   const fabRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
+  const openSheet = () => {
+    opener.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    setOpen(true);
+  };
   useEffect(() => {
-    if (open && !wasOpen.current) opener.current = document.activeElement as HTMLElement | null;
+    if (open && !wasOpen.current) {
+      sheetRef.current?.querySelector<HTMLElement>('button[aria-label="Close coach"], button')?.focus();
+    }
     if (wasOpen.current && !open) {
       const back = opener.current && document.contains(opener.current) ? opener.current : fabRef.current;
       back?.focus();
@@ -118,7 +128,7 @@ export default function FloatingCoach() {
       {!open && !hideFab && (
         <button
           ref={fabRef}
-          onClick={() => setOpen(true)}
+          onClick={openSheet}
           aria-label="Open AI coach"
           className="fixed z-40 right-[max(1rem,calc(50%-15rem+1rem))] bottom-[calc(72px+env(safe-area-inset-bottom))] w-14 h-14 rounded-full bg-gradient-to-br from-energy to-accent text-black shadow-lg shadow-accent/20 flex items-center justify-center active:scale-95 transition-transform"
         >
@@ -129,6 +139,7 @@ export default function FloatingCoach() {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setOpen(false)}>
           <div
+            ref={sheetRef}
             role="dialog"
             aria-modal="true"
             aria-label="AI coach"

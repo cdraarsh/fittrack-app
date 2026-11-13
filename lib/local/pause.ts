@@ -15,10 +15,14 @@ export interface PauseState {
 
 export const pauseKey = (sessionId: string) => `pause:${sessionId}`;
 
-/** Effective state: a session without a record has been active since started_at. */
+/**
+ * Effective state: a session without a record has been active since
+ * started_at. Without a start time either (e.g. started by watch data) it is
+ * running, never paused; activeMs() reads an unparsable time as 0.
+ */
 export function effectivePause(stored: PauseState | undefined, startedAt: string | null): PauseState {
   if (stored) return stored;
-  return { activeMs: 0, resumedAt: startedAt };
+  return { activeMs: 0, resumedAt: startedAt ?? '' };
 }
 
 export function isPaused(p: PauseState): boolean {
