@@ -64,7 +64,8 @@ test('1. first launch: start the program; no Program tab; Day 1 is up next and r
   for (const name of ['Today', 'Strength', 'History', 'Settings']) await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
   await page.getByRole('button', { name: /^Start program$/ }).click();
   await expect(page.getByRole('heading', { name: /Day 1 · Upper · Push is up next/ })).toBeVisible();
-  await expect(page.getByText(/Cycle 1 · Week 1/)).toBeVisible();
+  await expect(page.getByText(/^Cycle 1/)).toBeVisible();
+  await expect(page.getByText(/\bWeek \d/)).toHaveCount(0);
   await expect(page.getByLabel(/ set \d+ weight$/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Stop$/ })).toHaveCount(0);
   await expectSynced();

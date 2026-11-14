@@ -34,7 +34,7 @@ describe('ruleBasedInsight', () => {
     expect(lines[0]).toContain('sleep 5 h');
     expect(lines[0]).toContain('HRV 48 (28d avg 60)');
     expect(lines[1]).toBe('Up next: session 13/16 · Upper A — Bench Press 92.5 kg 3×5-8.');
-    expect(lines[2]).toMatch(/e1RM up 1\d\.\d% over 4 weeks/);
+    expect(lines[2]).toMatch(/e1RM up 1\d\.\d% over 28 days/);
   });
 
   it('handles a brand-new user', () => {

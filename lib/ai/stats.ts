@@ -92,15 +92,6 @@ export function detectMainLifts(exercises: ExerciseRow[], explicit?: string[]): 
 
 // ─── Phase ────────────────────────────────────────────────────────────────────
 
-export function phaseFor(week: number | null, totalWeeks: number | null): string | null {
-  if (!isNum(week) || !isNum(totalWeeks) || totalWeeks <= 0) return null;
-  const f = (week - 1) / totalWeeks;
-  if (f < 0.25) return 'foundation';
-  if (f < 0.5) return 'build';
-  if (f < 0.75) return 'strength';
-  return 'peak';
-}
-
 // ─── Stats pack shape ─────────────────────────────────────────────────────────
 
 export interface TopSet { kg: number | null; reps: number | null; seconds: number | null }
@@ -113,13 +104,12 @@ export interface StatsPack {
     total: number;
     nextSession: null | {
       seq: number;
-      week: number | null;
       title: string | null;
+      deload: boolean;
       exercises: { name: string; sets: number | null; reps: string | null; targetKg: number | null }[];
     };
-    week: number | null;
-    totalWeeks: number | null;
-    phase: string | null;
+    /** Pass through the Day 1–4 cycle, same number the app shows. No weeks or phases. */
+    cycle: number | null;
     daysSinceLast: number | null;
   };
   lastSession: null | {
@@ -193,8 +183,8 @@ function buildProgram(input: StatsInput, idx: Indexed): StatsPack['program'] {
     (isNum(program?.weeks) && isNum(program?.sessions_per_week) ? program!.weeks! * program!.sessions_per_week! : 0);
   const lastDates = done.map(s => s.completed_at?.slice(0, 10)).filter((d): d is string => !!d).sort();
   const lastDate = lastDates[lastDates.length - 1];
-  const week = next?.week ?? done[done.length - 1]?.week ?? null;
-  const totalWeeks = program?.weeks ?? (sorted.length ? Math.max(...sorted.map(s => s.week ?? 0)) || null : null);
+  const ref = next ?? done[done.length - 1] ?? null;
+  const cycle = ref ? dayInfo({ seq: ref.seq, template_key: ref.template_key ?? '', title: ref.title }).cycle : null;
 
   let nextSession: NonNullable<StatsPack['program']>['nextSession'] = null;
   if (next) {
@@ -203,7 +193,7 @@ function buildProgram(input: StatsInput, idx: Indexed): StatsPack['program'] {
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     nextSession = {
       seq: next.seq,
-      week: next.week,
+      deload: !!next.is_deload,
       // Same name the app shows ("Day 2 · Lower · Quads").
       title: next.template_key ? dayInfo({ seq: next.seq, template_key: next.template_key, title: next.title }).label : next.title,
       exercises: ses.map(se => ({
@@ -221,9 +211,7 @@ function buildProgram(input: StatsInput, idx: Indexed): StatsPack['program'] {
     completed: done.length,
     total,
     nextSession,
-    week,
-    totalWeeks,
-    phase: phaseFor(week, totalWeeks),
+    cycle,
     daysSinceLast: lastDate ? daysBetween(lastDate, today) : null,
   };
 }

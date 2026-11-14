@@ -44,16 +44,16 @@ function trendLine(pack: StatsPack): string | null {
     .sort((a, b) => Math.abs(b.changePct!) - Math.abs(a.changePct!))[0];
   if (best && best.changePct !== 0) {
     const latest = [...best.weekly].reverse().find(x => x !== null);
-    return `${best.name} e1RM ${best.changePct! > 0 ? 'up' : 'down'} ${Math.abs(best.changePct!)}% over 4 weeks${
+    return `${best.name} e1RM ${best.changePct! > 0 ? 'up' : 'down'} ${Math.abs(best.changePct!)}% over 28 days${
       latest != null ? ` (now ${fmtKg(latest)})` : ''
     }.`;
   }
   const a = pack.trends.adherence;
-  if (a && a.expected > 0) return `Adherence: ${a.completed}/${a.expected} sessions in the last 4 weeks (${a.pct}%).`;
+  if (a && a.expected > 0) return `Adherence: ${a.completed}/${a.expected} sessions in the last 28 days (${a.pct}%).`;
   const bw = pack.bodyweight;
   if (bw?.avg7 != null) {
     return bw.change != null
-      ? `Bodyweight 7-day avg ${fmtKg(bw.avg7)} (${bw.change >= 0 ? '+' : ''}${bw.change} kg vs last week).`
+      ? `Bodyweight 7-day avg ${fmtKg(bw.avg7)} (${bw.change >= 0 ? '+' : ''}${bw.change} kg vs the 7 days before).`
       : `Bodyweight 7-day avg ${fmtKg(bw.avg7)}.`;
   }
   return null;
