@@ -12,7 +12,6 @@ import type { UserSettings } from '@/lib/program/types';
 import { describeOp, humanizeError, refusalReason } from '@/lib/ui/errors';
 import type { OutboxOp } from '@/lib/local/db';
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -69,27 +68,6 @@ function SettingsForm({ userId, settings }: { userId: string; settings: UserSett
             <option value="immediate">Immediately</option>
           </select>
         </Row>
-        <div className="py-2">
-          <div className="text-sm font-semibold mb-1">Preferred training days</div>
-          <div className="text-xs text-text3 mb-2">Used for the train/rest suggestion and reminders. Sessions never skip.</div>
-          <div className="flex gap-1.5">
-            {DAYS.map((d, i) => {
-              const on = settings.preferred_days.includes(i);
-              return (
-                <button
-                  key={d}
-                  aria-pressed={on}
-                  onClick={() =>
-                    save({ preferred_days: on ? settings.preferred_days.filter((x) => x !== i) : [...settings.preferred_days, i].sort() })
-                  }
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold border ${on ? 'bg-accent/10 border-accent/35 text-accent' : 'bg-bg3 border-border text-text3'}`}
-                >
-                  {d}
-                </button>
-              );
-            })}
-          </div>
-        </div>
         <Row label="Time zone" hint="Decides when a new calendar day starts">
           {zones.length ? (
             <select
@@ -372,7 +350,7 @@ function NotificationsCard() {
 
   return (
     <Card title="Reminders">
-      <Row label="Training-day reminder" hint="A morning push on your preferred days when a session is waiting. On iPhone, install the app to the Home Screen first.">
+      <Row label="Morning reminder" hint="A morning push when a session is waiting. On iPhone, install the app to the Home Screen first.">
         {state === 'unsupported' ? (
           <span className="text-xs text-text3">Not supported here</span>
         ) : state === 'denied' ? (

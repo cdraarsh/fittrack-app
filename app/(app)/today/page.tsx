@@ -13,11 +13,6 @@ import { useActiveProgram, useBodyWeights, useLatestProgram, useLocalUserId, use
 import { effectivePause, isPaused } from '@/lib/local/pause';
 import { addDays, dayInfo, localDate } from '@/lib/program';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function weekdayIn(timeZone: string, d = new Date()): number {
-  return WEEKDAYS.indexOf(new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(d));
-}
 
 function unlockLabel(date: string | null, timeZone: string): string {
   if (!date) return 'soon';
@@ -69,7 +64,7 @@ export default function TodayPage() {
           <p className="text-text2 text-sm mb-4">
             {finished
               ? `All sessions of “${latest!.name}” are done. Start the next block when you’re ready.`
-              : '16 weeks · 4 sessions a week · 64 numbered sessions. Each one unlocks when the one before it is done.'}
+              : '64 numbered sessions in a repeating Day 1–4 cycle. Each one unlocks when the one before it is done.'}
           </p>
           <button
             onClick={() => void start()}
@@ -84,7 +79,6 @@ export default function TodayPage() {
   }
 
   if (!sessions || !progress) return <Spinner />;
-  const preferred = settings.preferred_days.includes(weekdayIn(tz));
   const current = progress.current;
   const waiting = progress.waiting;
 
@@ -95,7 +89,7 @@ export default function TodayPage() {
         <section aria-labelledby="up-next">
           <div className="mb-3">
             <div className="text-xs font-bold uppercase tracking-widest text-text3">
-              Cycle {dayInfo(current).cycle} · Week {current.week} · {current.phase}
+              Cycle {dayInfo(current).cycle}
               {current.is_deload ? ' · Deload' : ''}
             </div>
             <h2 id="up-next" className="font-condensed text-2xl font-black leading-tight">
@@ -106,11 +100,6 @@ export default function TodayPage() {
                   : 'in progress'
                 : 'is up next'}
             </h2>
-            {current.status === 'up_next' && (
-              <p className="text-xs text-text2 mt-1">
-                {preferred ? 'Today is one of your training days.' : 'Not one of your usual training days — rest is fine too.'} Advice only.
-              </p>
-            )}
           </div>
           <SessionLogger sessionId={current.id} userId={userId} />
         </section>

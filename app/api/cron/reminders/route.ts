@@ -12,14 +12,14 @@ export const dynamic = 'force-dynamic';
  *  in the morning there. */
 const REMINDER_HOURS = { from: 6, to: 11 } as const;
 
-function localParts(timeZone: string, now: Date): { weekday: number; hour: number } {
-  const f = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
+function localParts(timeZone: string, now: Date): { hour: number } {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' });
   const parts = Object.fromEntries(f.formatToParts(now).map((p) => [p.type, p.value]));
-  return { weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday), hour: Number(parts.hour) % 24 };
+  return { hour: Number(parts.hour) % 24 };
 }
 
 /**
- * Morning web-push reminder on a preferred training day, only when a session
+ * Morning web-push reminder on any day a session
  * is actually waiting (up next or unfinished). Never on a locked day, a
  * finished block, or a day already trained. Expired subscriptions are removed.
  */
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   const userIds = subs.map((s) => s.user_id as string);
   const [{ data: settingsRows }, { data: programs }] = await Promise.all([
-    db.from('user_settings').select('user_id, preferred_days, timezone, unlock_rule').in('user_id', userIds),
+    db.from('user_settings').select('user_id, timezone, unlock_rule').in('user_id', userIds),
     db.from('programs').select('id, user_id, status').in('user_id', userIds).eq('status', 'active'),
   ]);
   const settings = new Map((settingsRows ?? []).map((r) => [r.user_id as string, r]));
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       const s = settings.get(sub.user_id);
       const session = waiting.get(sub.user_id);
       if (!s || !session || !sub.subscription?.endpoint) return;
-      const { weekday, hour } = localParts(s.timezone || 'UTC', now);
+      const { hour } = localParts(s.timezone || 'UTC', now);
       // Already trained today (possible with the 'immediate' rule): no nudge.
       const tz = s.timezone || 'UTC';
       const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
@@ -80,7 +80,6 @@ export async function GET(req: NextRequest) {
         (r) => r.user_id === sub.user_id && typeof r.completed_at === 'string' && day(new Date(r.completed_at)) === day(now),
       );
       if (trainedToday) return;
-      if (!(s.preferred_days ?? []).includes(weekday)) return;
       if (hour < REMINDER_HOURS.from || hour >= REMINDER_HOURS.to) return;
       const label = dayInfo(session).label;
       const payload = JSON.stringify({

@@ -9,7 +9,6 @@ import {
   emptyStatsInput,
   epley1RM,
   localDate,
-  phaseFor,
   statsPackToPrompt,
 } from '@/lib/ai/stats';
 import { TODAY, richInput } from './fixtures';
@@ -30,13 +29,6 @@ describe('epley1RM', () => {
 });
 
 describe('helpers', () => {
-  it('phaseFor splits the program into quarters', () => {
-    expect(phaseFor(1, 16)).toBe('foundation');
-    expect(phaseFor(5, 16)).toBe('build');
-    expect(phaseFor(9, 16)).toBe('strength');
-    expect(phaseFor(16, 16)).toBe('peak');
-    expect(phaseFor(null, 16)).toBeNull();
-  });
   it('localDate respects timezone', () => {
     const instant = '2026-11-10T03:00:00Z';
     expect(localDate(instant, 'UTC')).toBe('2026-11-10');
@@ -63,12 +55,12 @@ describe('buildStatsPack (rich data)', () => {
       name: 'Upper/Lower',
       completed: 12,
       total: 16,
-      week: 4,
-      totalWeeks: 4,
-      phase: 'peak',
+      cycle: 4,
       daysSinceLast: 4,
     });
-    expect(pack.program!.nextSession).toMatchObject({ seq: 13, title: 'Upper A' });
+    expect(pack.program!.nextSession).toMatchObject({ seq: 13, title: 'Upper A', deload: false });
+    expect(pack.program).not.toHaveProperty('week');
+    expect(pack.program).not.toHaveProperty('phase');
     expect(pack.program!.nextSession!.exercises[0]).toEqual({ name: 'Bench Press', sets: 3, reps: '5-8', targetKg: 92.5 });
   });
 
